@@ -1,0 +1,10 @@
+# Déploiement Netlify — le runtime Next.js est installé automatiquement.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
