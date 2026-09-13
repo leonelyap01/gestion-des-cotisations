@@ -20,6 +20,7 @@ import type {
   Member,
   MemberStats,
   Payment,
+  Post,
   Report,
   Settings,
 } from "@/lib/types";
@@ -61,6 +62,14 @@ export type NewMember = {
   notes: string;
 };
 
+export type NewPost = {
+  title: string;
+  body: string;
+  category: Post["category"];
+  pinned: boolean;
+  published: boolean;
+};
+
 interface DataContextValue {
   supabase: SupabaseClient;
   ready: boolean;
@@ -71,6 +80,8 @@ interface DataContextValue {
   members: Member[];
   payments: Payment[];
   reports: Report[];
+  /** Annonces, brouillons compris (l'espace trésorier voit tout). */
+  posts: Post[];
   stats: MemberStats[];
   statsById: Map<string, MemberStats>;
   dashboard: DashboardSummary;
@@ -85,6 +96,9 @@ interface DataContextValue {
   /** Marque / démarque le droit d'adhésion comme réglé. */
   toggleMembershipFee: (memberId: string, paid: boolean) => Promise<void>;
   logReport: (kind: string, label: string, meta?: Record<string, unknown>) => Promise<void>;
+  addPost: (post: NewPost) => Promise<Post | null>;
+  updatePost: (id: string, patch: Partial<Post>) => Promise<void>;
+  deletePost: (id: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -104,6 +118,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,14 +132,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [s, m, p, r] = await Promise.all([
+      const [s, m, p, r, a] = await Promise.all([
         supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
         supabase.from("members").select("*").order("last_name"),
         supabase.from("payments").select("*"),
         supabase.from("reports").select("*").order("created_at", { ascending: false }).limit(60),
+        supabase.from("posts").select("*").order("published_at", { ascending: false }),
       ]);
 
-      const firstError = s.error || m.error || p.error || r.error;
+      const firstError = s.error || m.error || p.error || r.error || a.error;
       if (firstError) throw firstError;
 
       if (s.data) {
@@ -139,6 +155,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setMembers((m.data ?? []) as Member[]);
       setPayments((p.data ?? []) as Payment[]);
       setReports((r.data ?? []) as Report[]);
+      setPosts((a.data ?? []) as Post[]);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
@@ -296,6 +313,51 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     [supabase],
   );
 
+  // ----- Annonces publiques ----------------------------------------------
+
+  const addPost = useCallback(
+    async (post: NewPost) => {
+      const now = new Date().toISOString();
+      const { data, error: err } = await supabase
+        .from("posts")
+        .insert({ ...post, published_at: now, updated_at: now })
+        .select()
+        .single();
+      if (err) {
+        setError(err.message);
+        return null;
+      }
+      setPosts((prev) => [data as Post, ...prev]);
+      return data as Post;
+    },
+    [supabase],
+  );
+
+  const updatePost = useCallback(
+    async (id: string, patch: Partial<Post>) => {
+      const next = { ...patch, updated_at: new Date().toISOString() };
+      setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...next } : p)));
+      const { error: err } = await supabase.from("posts").update(next).eq("id", id);
+      if (err) {
+        setError(err.message);
+        await refresh();
+      }
+    },
+    [supabase, refresh],
+  );
+
+  const deletePost = useCallback(
+    async (id: string) => {
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+      const { error: err } = await supabase.from("posts").delete().eq("id", id);
+      if (err) {
+        setError(err.message);
+        await refresh();
+      }
+    },
+    [supabase, refresh],
+  );
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     window.location.href = "/login";
@@ -337,6 +399,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     members,
     payments,
     reports,
+    posts,
     stats,
     statsById,
     dashboard,
@@ -349,6 +412,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     togglePayment,
     toggleMembershipFee,
     logReport,
+    addPost,
+    updatePost,
+    deletePost,
     signOut,
   };
 

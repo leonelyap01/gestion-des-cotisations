@@ -22,7 +22,8 @@ if (!url) {
   process.exit(1);
 }
 
-const sql = fs.readFileSync(path.join("supabase", "schema.sql"), "utf8");
+// Les fichiers sont appliqués dans l'ordre ; tous sont idempotents.
+const FILES = ["schema.sql", "annonces.sql"];
 
 const client = new pg.Client({
   connectionString: url,
@@ -32,8 +33,11 @@ const client = new pg.Client({
 await client.connect();
 console.log("Connecté à la base.");
 
-await client.query(sql);
-console.log("Schéma appliqué (tables, index et règles RLS).");
+for (const file of FILES) {
+  const sql = fs.readFileSync(path.join("supabase", file), "utf8");
+  await client.query(sql);
+  console.log("Appliqué :", file);
+}
 
 const { rows } = await client.query(
   "select table_name from information_schema.tables where table_schema = 'public' order by table_name",

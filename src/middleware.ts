@@ -39,12 +39,15 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLogin = request.nextUrl.pathname.startsWith("/login");
+  const { pathname } = request.nextUrl;
+  const isLogin = pathname.startsWith("/login");
+  // Page publique des actualités : consultable par les membres sans compte.
+  const isPublic = pathname === "/infos" || pathname.startsWith("/infos/");
 
-  if (!user && !isLogin) {
+  if (!user && !isLogin && !isPublic) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/login";
-    redirect.searchParams.set("suivant", request.nextUrl.pathname);
+    redirect.searchParams.set("suivant", pathname);
     return NextResponse.redirect(redirect);
   }
 

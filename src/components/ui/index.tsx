@@ -11,11 +11,17 @@ import { X } from "lucide-react";
 export function Card({
   children,
   className = "",
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }) {
-  return <div className={"card " + className}>{children}</div>;
+  return (
+    <div className={"card " + className} style={style}>
+      {children}
+    </div>
+  );
 }
 
 export function SectionTitle({

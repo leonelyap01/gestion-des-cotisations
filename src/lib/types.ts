@@ -43,6 +43,24 @@ export interface Payment {
   paid_at: string;
 }
 
+/** Catégorie d'une annonce, qui détermine sa pastille de couleur. */
+export type PostCategory = "info" | "annonce" | "evenement" | "urgent";
+
+/** Actualité affichée sur la page publique /infos. */
+export interface Post {
+  id: string;
+  title: string;
+  body: string;
+  category: PostCategory;
+  /** Épinglée : remonte en tête de la page publique. */
+  pinned: boolean;
+  /** false = brouillon, visible uniquement dans l'espace trésorier. */
+  published: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Report {
   id: string;
   kind: string;

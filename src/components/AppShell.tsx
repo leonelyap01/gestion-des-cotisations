@@ -9,6 +9,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Settings as SettingsIcon,
   Users,
   Wallet,
@@ -16,13 +17,15 @@ import {
 import { useData } from "./DataProvider";
 import { Spinner } from "./ui";
 
+/** `short` est le libellé utilisé par la barre de navigation mobile. */
 const NAV = [
-  { href: "/", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/membres", label: "Membres", icon: Users },
-  { href: "/cotisations", label: "Cotisations", icon: CalendarCheck2 },
-  { href: "/alertes", label: "Alertes", icon: AlertTriangle },
-  { href: "/rapports", label: "Rapports", icon: FileText },
-  { href: "/parametres", label: "Paramètres", icon: SettingsIcon },
+  { href: "/", label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard },
+  { href: "/membres", label: "Membres", short: "Membres", icon: Users },
+  { href: "/cotisations", label: "Cotisations", short: "Cotis.", icon: CalendarCheck2 },
+  { href: "/alertes", label: "Alertes", short: "Alertes", icon: AlertTriangle },
+  { href: "/annonces", label: "Annonces", short: "Infos", icon: Megaphone },
+  { href: "/rapports", label: "Rapports", short: "Rapports", icon: FileText },
+  { href: "/parametres", label: "Paramètres", short: "Réglages", icon: SettingsIcon },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -129,8 +132,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* ---------- Barre de navigation (mobile) ---------- */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-line bg-surface/95 backdrop-blur lg:hidden">
-        {NAV.map(({ href, label, icon: Icon }) => {
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-line bg-surface/95 backdrop-blur lg:hidden">
+        {NAV.map(({ href, label, short, icon: Icon }) => {
           const active = isActive(pathname, href);
           const badge = href === "/alertes" && dashboard.atRisk > 0;
           return (
@@ -139,12 +142,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={href}
               aria-label={label}
               className={
-                "relative flex flex-col items-center gap-1 py-2.5 text-[10px] " +
+                "relative flex flex-col items-center gap-0.5 py-2.5 text-[9px] " +
                 (active ? "text-accent" : "text-muted")
               }
             >
-              <Icon size={19} />
-              <span className="max-w-full truncate px-0.5">{label.split(" ")[0]}</span>
+              <Icon size={18} />
+              <span className="max-w-full truncate px-0.5">{short}</span>
               {badge && (
                 <span className="absolute right-1/4 top-1.5 h-1.5 w-1.5 rounded-full bg-danger" />
               )}

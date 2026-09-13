@@ -30,8 +30,10 @@ n'est perdu entre deux sessions.
 | **Membres** | Ajout, modification, suppression, historique complet. Recherche et filtres : à jour, 1 / 2 / 3+ mois d'arriérés, n'ayant jamais soldé, ayant soldé au moins un mois, signalés, droit d'adhésion impayé, membres retirés. |
 | **Cotisations** | La grille : une ligne par membre, une colonne par mois. Un clic marque un mois soldé (la date d'enregistrement est conservée). |
 | **Alertes** | Membres signalés en vue d'un retrait, arriérés importants, droits d'adhésion en attente. |
+| **Annonces** | Rédaction des actualités publiées sur la page publique, brouillons, épinglage, partage du lien. |
 | **Rapports** | Export PDF et Word de la grille (A4 paysage), PDF du point de caisse, 4 messages WhatsApp, historique daté des générations. |
 | **Paramètres** | Montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
+| **`/infos`** *(publique)* | Actualités du comité, consultables par les membres **sans compte**. |
 
 **Stack** : Next.js 15 (App Router) · TailwindCSS 4 · Supabase (PostgreSQL + Auth) ·
 Recharts · @react-pdf/renderer · docx.
@@ -92,7 +94,8 @@ par les règles RLS de la base, pas par le secret de la clé.
 Deux possibilités, au choix.
 
 **A. Depuis l'interface Supabase** — ouvrez *SQL Editor*, collez tout le contenu de
-[`supabase/schema.sql`](supabase/schema.sql) et cliquez sur **Run**.
+[`supabase/schema.sql`](supabase/schema.sql) et cliquez sur **Run**, puis faites
+de même avec [`supabase/annonces.sql`](supabase/annonces.sql).
 
 **B. En ligne de commande** — avec le mot de passe de la base :
 
@@ -182,6 +185,31 @@ Page **Rapports**, copiez ensuite le message « Ouverture d'un nouveau mois ».
 Sur sa fiche, en bas, un message WhatsApp personnalisé est déjà rédigé avec son nom,
 ses mois dus et le total à régler. Bouton **Copier**, puis collez dans WhatsApp.
 
+### Publier une actualité pour les membres
+
+Page **Annonces → Nouvelle annonce**. Donnez un titre, choisissez une catégorie
+(Information, Annonce, Événement, Urgent), rédigez le message — les retours à la
+ligne sont conservés tels quels.
+
+- **Publier sur la page publique** décoché = brouillon, visible de vous seul.
+- **Épingler** remonte l'annonce en tête de page, pour une information qui doit
+  rester visible plusieurs semaines.
+- **Pré-remplir avec le point de caisse** insère la synthèse chiffrée du moment
+  (théorique, perçu, manque à gagner, détail par mois) dans le corps du message.
+
+Les membres consultent tout cela sur **`/infos`** — par exemple
+`https://votre-site.netlify.app/infos` — sans aucun compte. Le bouton **Message
+WhatsApp** de la page Annonces copie un texte tout prêt contenant ce lien, à coller
+dans le groupe.
+
+> **Ce qui est public et ce qui ne l'est pas.** La page `/infos` expose uniquement :
+> les annonces publiées, le nom de l'association, les montants en vigueur et les
+> coordonnées de paiement. La liste des membres, les paiements, les arriérés et les
+> rapports ne sont **jamais** accessibles sans connexion — la base les refuse au
+> niveau des règles RLS, pas seulement dans l'interface. En revanche, tout ce que
+> *vous* écrivez dans une annonce devient visible de quiconque possède le lien :
+> n'y nommez personne à propos de ses impayés.
+
 ### Produire les documents
 
 Page **Rapports** : la grille en PDF ou Word et le point de caisse en PDF se
@@ -200,8 +228,10 @@ src/
 │   │   ├── membres/            Liste + fiche individuelle
 │   │   ├── cotisations/        La grille mensuelle
 │   │   ├── alertes/            Signalements
+│   │   ├── annonces/           Rédaction des actualités publiques
 │   │   ├── rapports/           Exports et messages
 │   │   └── parametres/         Réglages
+│   ├── infos/              ★ Page publique des actualités (sans connexion)
 │   ├── login/              Connexion
 │   ├── layout.tsx
 │   └── globals.css         Thème sombre, 3 palettes, styles d'impression
@@ -209,19 +239,22 @@ src/
 │   ├── DataProvider.tsx    Chargement des données + mutations Supabase
 │   ├── AppShell.tsx        Navigation (latérale sur PC, barre basse sur mobile)
 │   ├── MemberForm.tsx      Formulaire membre
+│   ├── PostForm.tsx        Formulaire d'une annonce
 │   ├── dashboard/Charts.tsx
 │   └── ui/                 Boutons, cartes, badges, fenêtres modales
 ├── lib/
 │   ├── cotisations.ts      ★ Toutes les règles métier (fonctions pures)
 │   ├── cotisations.test.ts   Les 18 tests de ces règles
 │   ├── messages.ts         Messages WhatsApp
+│   ├── posts.ts            Catégories et tri des annonces
 │   ├── format.ts           Montants, dates, téléchargement, presse-papier
 │   ├── types.ts
 │   ├── exports/            PDF (@react-pdf) et Word (docx)
 │   └── supabase/           Clients navigateur et serveur
-├── middleware.ts           Redirige vers /login si pas de session
+├── middleware.ts           Redirige vers /login (sauf /infos, publique)
 scripts/                    Mise en place de la base et import initial
 supabase/schema.sql         Tables, index et règles RLS
+supabase/annonces.sql       Table des annonces + lecture publique
 ```
 
 Le fichier à connaître est **`src/lib/cotisations.ts`** : il ne contient que des
@@ -247,7 +280,7 @@ Sous PowerShell :
 
 ```powershell
 $env:DATABASE_URL = "postgresql://postgres:MOT_DE_PASSE@db.xxxxxxxx.supabase.co:5432/postgres"
-node scripts/setup-db.mjs        # crée les tables et les règles RLS
+node scripts/setup-db.mjs        # applique schema.sql puis annonces.sql
 node scripts/seed-membres.mjs    # réimporte les 24 membres du registre 2026
 ```
 
@@ -267,9 +300,14 @@ git push
 
 ## 9. Sécurité
 
-- Toutes les tables sont protégées par **Row Level Security** : sans session
-  authentifiée, aucune ligne n'est lisible ni modifiable.
-- Le middleware renvoie vers `/login` toute requête non authentifiée.
+- `members`, `payments` et `reports` sont protégées par **Row Level Security** :
+  sans session authentifiée, aucune ligne n'est lisible ni modifiable.
+- Seules deux exceptions sont publiques, et volontairement : les annonces
+  **publiées** (les brouillons restent privés) et la ligne de paramètres, qui ne
+  contient que le nom de l'association, les montants et les coordonnées de
+  paiement déjà diffusées à tous.
+- Le middleware renvoie vers `/login` toute requête non authentifiée, à
+  l'exception de la page publique `/infos`.
 - `.env.local` est ignoré par Git ; il ne contient de toute façon que les deux clés
   publiques.
 - **Le mot de passe de la base de données ne doit jamais être placé dans un fichier
