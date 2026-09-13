@@ -1,5 +1,26 @@
 /** Types partages par toute l'application. Ils refletent le schema Supabase. */
 
+/**
+ * Profils d'accès.
+ *  - « tresorier »     : accès complet.
+ *  - « communication » : annonces et cartes de membre uniquement.
+ */
+export type UserRole = "tresorier" | "communication";
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  tresorier: "Trésorier — accès complet",
+  communication: "Communication — annonces et cartes",
+};
+
+/** Compte du bureau autorisé à se connecter à l'application. */
+export interface AppUser {
+  user_id: string;
+  email: string | null;
+  display_name: string;
+  role: UserRole;
+  created_at: string;
+}
+
 export type AccentKey = "navy-gold" | "emerald" | "orange";
 
 export interface Settings {

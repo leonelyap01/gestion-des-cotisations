@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   CalendarCheck2,
   FileText,
-  LayoutDashboard,
   IdCard,
+  LayoutDashboard,
+  Lock,
   LogOut,
   Megaphone,
   MoreHorizontal,
@@ -18,25 +19,42 @@ import {
 } from "lucide-react";
 import { useData } from "./DataProvider";
 import { Spinner } from "./ui";
+import { ROLE_LABELS } from "@/lib/types";
+import type { UserRole } from "@/lib/types";
 
 /**
  * `short` est le libellé de la barre mobile ; `primary` désigne les quatre
  * entrées qui y restent visibles en permanence — les autres sont regroupées
  * derrière le bouton « Plus », pour garder des cibles tactiles confortables.
  */
+const ALL: UserRole[] = ["tresorier", "communication"];
+const TRESORIER: UserRole[] = ["tresorier"];
+
 const NAV = [
-  { href: "/", label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard, primary: true },
-  { href: "/membres", label: "Membres", short: "Membres", icon: Users, primary: true },
-  { href: "/cotisations", label: "Cotisations", short: "Cotis.", icon: CalendarCheck2, primary: true },
-  { href: "/alertes", label: "Alertes", short: "Alertes", icon: AlertTriangle, primary: true },
-  { href: "/annonces", label: "Annonces", short: "Annonces", icon: Megaphone, primary: false },
-  { href: "/cartes", label: "Cartes de membre", short: "Cartes", icon: IdCard, primary: false },
-  { href: "/rapports", label: "Rapports", short: "Rapports", icon: FileText, primary: false },
-  { href: "/parametres", label: "Paramètres", short: "Réglages", icon: SettingsIcon, primary: false },
+  { href: "/", label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard, primary: true, roles: TRESORIER },
+  { href: "/membres", label: "Membres", short: "Membres", icon: Users, primary: true, roles: TRESORIER },
+  { href: "/cotisations", label: "Cotisations", short: "Cotis.", icon: CalendarCheck2, primary: true, roles: TRESORIER },
+  { href: "/alertes", label: "Alertes", short: "Alertes", icon: AlertTriangle, primary: true, roles: TRESORIER },
+  { href: "/annonces", label: "Annonces", short: "Annonces", icon: Megaphone, primary: false, roles: ALL },
+  { href: "/cartes", label: "Cartes de membre", short: "Cartes", icon: IdCard, primary: false, roles: ALL },
+  { href: "/rapports", label: "Rapports", short: "Rapports", icon: FileText, primary: false, roles: TRESORIER },
+  { href: "/parametres", label: "Paramètres", short: "Réglages", icon: SettingsIcon, primary: false, roles: TRESORIER },
 ];
 
-const PRIMARY_NAV = NAV.filter((n) => n.primary);
-const SECONDARY_NAV = NAV.filter((n) => !n.primary);
+/** Rubriques visibles pour un profil donné. */
+function navFor(role: UserRole | null) {
+  if (!role) return [];
+  return NAV.filter((n) => n.roles.includes(role));
+}
+
+/** Le profil connecté a-t-il le droit d'ouvrir cette adresse ? */
+function isAllowed(role: UserRole | null, pathname: string): boolean {
+  if (!role) return false;
+  const entry = [...NAV]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((n) => isActive(pathname, n.href));
+  return entry ? entry.roles.includes(role) : true;
+}
 
 function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -44,9 +62,24 @@ function isActive(pathname: string, href: string): boolean {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { settings, dashboard, ready, error, configured, signOut } = useData();
+  const router = useRouter();
+  const { settings, dashboard, ready, error, configured, role, signOut } = useData();
   const [signingOut, setSigningOut] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+
+  // Rubriques ouvertes au profil connecté.
+  const visible = navFor(role);
+  // Barre mobile : jusqu'à cinq entrées directes, le reste sous « Plus ».
+  const primary = visible.length <= 5 ? visible : visible.slice(0, 4);
+  const secondary = visible.length <= 5 ? [] : visible.slice(4);
+  const columns = primary.length + (secondary.length > 0 ? 1 : 0);
+  const allowed = isAllowed(role, pathname);
+
+  // Le profil « communication » n'a pas de tableau de bord : sa page
+  // d'accueil est la rédaction des annonces.
+  useEffect(() => {
+    if (role === "communication" && pathname === "/") router.replace("/annonces");
+  }, [role, pathname, router]);
 
   // Garde-fou : tant que les clés Supabase ne sont pas renseignées, on affiche
   // la marche à suivre plutôt qu'une application vide.
@@ -67,10 +100,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {settings.association_name}
           </p>
           <p className="text-xs text-muted">Exercice {settings.exercise_year}</p>
+          {role && (
+            <p className="mt-2 inline-flex rounded-full border border-line px-2 py-0.5 text-[11px] text-muted">
+              {ROLE_LABELS[role].split(" — ")[0]}
+            </p>
+          )}
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {visible.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             const badge = href === "/alertes" && dashboard.atRisk > 0 ? dashboard.atRisk : null;
             return (
@@ -138,13 +176,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         <main className="min-w-0 flex-1 px-4 py-5 pb-24 lg:px-8 lg:py-8 lg:pb-10">
-          {ready ? children : <Spinner />}
+          {!ready ? <Spinner /> : allowed ? children : <AccesRefuse role={role} />}
         </main>
       </div>
 
       {/* ---------- Barre de navigation (mobile) ---------- */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur lg:hidden">
-        {PRIMARY_NAV.map(({ href, label, short, icon: Icon }) => {
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 grid border-t border-line bg-surface/95 backdrop-blur lg:hidden"
+        style={{ gridTemplateColumns: "repeat(" + Math.max(columns, 1) + ", minmax(0, 1fr))" }}
+      >
+        {primary.map(({ href, label, short, icon: Icon }) => {
           const active = isActive(pathname, href);
           const badge = href === "/alertes" && dashboard.atRisk > 0;
           return (
@@ -167,14 +208,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
 
-        {/* Les quatre autres rubriques, sous un bouton « Plus ». */}
+        {/* Rubriques restantes, sous un bouton « Plus ». */}
+        {secondary.length > 0 && (
         <button
           onClick={() => setMoreOpen((v) => !v)}
           aria-expanded={moreOpen}
           aria-label="Plus de rubriques"
           className={
             "flex flex-col items-center gap-0.5 py-2.5 text-[10px] " +
-            (moreOpen || SECONDARY_NAV.some((n) => isActive(pathname, n.href))
+            (moreOpen || secondary.some((n) => isActive(pathname, n.href))
               ? "text-accent"
               : "text-muted")
           }
@@ -182,10 +224,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <MoreHorizontal size={19} />
           <span>Plus</span>
         </button>
+        )}
       </nav>
 
       {/* Feuille « Plus » (mobile) */}
-      {moreOpen && (
+      {moreOpen && secondary.length > 0 && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
             className="absolute inset-0 bg-black/60"
@@ -194,7 +237,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
           <div className="absolute inset-x-0 bottom-[62px] border-t border-line bg-surface p-3 pb-4">
             <div className="grid grid-cols-2 gap-2">
-              {SECONDARY_NAV.map(({ href, label, icon: Icon }) => (
+              {secondary.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
@@ -213,6 +256,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Rubrique ouverte à un autre profil que celui du compte connecté. */
+function AccesRefuse({ role }: { role: UserRole | null }) {
+  return (
+    <div className="mx-auto max-w-md py-16 text-center">
+      <Lock size={30} className="mx-auto text-muted" />
+      <h1 className="mt-4 font-semibold">Rubrique réservée</h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted">
+        {role
+          ? "Votre profil « " +
+            ROLE_LABELS[role].split(" — ")[0] +
+            " » ne donne pas accès à cette partie de l'application. Demandez au trésorier de modifier vos droits si nécessaire."
+          : "Aucun profil n'est attribué à votre compte. Demandez au trésorier de vous ajouter depuis Paramètres → Accès du bureau."}
+      </p>
+      {role && (
+        <Link
+          href="/annonces"
+          className="mt-5 inline-block rounded-lg border border-line px-3.5 py-2 text-sm hover:bg-surface-2"
+        >
+          Revenir aux annonces
+        </Link>
       )}
     </div>
   );

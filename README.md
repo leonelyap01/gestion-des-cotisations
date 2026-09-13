@@ -14,7 +14,7 @@ n'est perdu entre deux sessions.
 1. [Ce que fait l'application](#1-ce-que-fait-lapplication)
 2. [Règles métier appliquées](#2-règles-métier-appliquées)
 3. [Mise en route](#3-mise-en-route)
-4. [Créer le compte trésorier](#4-créer-le-compte-trésorier)
+4. [Comptes et rôles](#4-comptes-et-rôles)
 5. [Déploiement sur Netlify](#5-déploiement-sur-netlify)
 6. [Guide d'utilisation](#6-guide-dutilisation)
 7. [Organisation du code](#7-organisation-du-code)
@@ -34,7 +34,7 @@ n'est perdu entre deux sessions.
 | **Annonces** | Rédaction des actualités publiées sur la page publique, brouillons, épinglage, partage du lien. |
 | **Cartes de membre** | Collecte des photos, attribution des numéros, génération du PDF des cartes prêt à découper. |
 | **Rapports** | Export PDF et Word de la grille (A4 paysage), PDF du point de caisse, 4 messages WhatsApp, historique daté des générations. |
-| **Paramètres** | Identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
+| **Paramètres** | Accès du bureau (rôles des comptes), identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
 | **`/infos`** *(publique)* | Actualités du comité, consultables par les membres **sans compte**. |
 | **`/carte/…`** *(publique)* | Vérification d'une carte de membre — cible du QR code imprimé sur les cartes. |
 
@@ -96,11 +96,12 @@ par les règles RLS de la base, pas par le secret de la clé.
 
 Deux possibilités, au choix.
 
-**A. Depuis l'interface Supabase** — ouvrez *SQL Editor* et exécutez les trois
+**A. Depuis l'interface Supabase** — ouvrez *SQL Editor* et exécutez les quatre
 fichiers du dossier [`supabase/`](supabase), dans l'ordre, en cliquant
 sur **Run** après chacun : [`schema.sql`](supabase/schema.sql) (cotisations),
 [`annonces.sql`](supabase/annonces.sql) (page publique),
-[`cartes.sql`](supabase/cartes.sql) (cartes de membre et identité du comité).
+[`cartes.sql`](supabase/cartes.sql) (cartes de membre et identité du comité),
+[`roles.sql`](supabase/roles.sql) (comptes et droits d'accès).
 
 **B. En ligne de commande** — avec le mot de passe de la base :
 
@@ -120,21 +121,41 @@ L'application est disponible sur http://localhost:3000.
 
 ---
 
-## 4. Créer le compte trésorier
+## 4. Comptes et rôles
+
+### Les deux profils
+
+| Profil | Accès |
+|---|---|
+| **Trésorier** | Tout : tableau de bord, membres, cotisations, alertes, rapports, annonces, cartes, paramètres. |
+| **Communication** | Annonces et cartes de membre uniquement. Les cotisations, les paiements et les montants de la caisse lui sont **refusés par la base de données**, pas seulement masqués à l'écran. |
+
+Un compte Communication peut : rédiger et publier les annonces, collecter les
+photos, attribuer les numéros de carte, renseigner la fonction d'un membre et
+générer les cartes. Il peut lire la liste des membres — les cartes en ont besoin —
+mais ne peut modifier aucune autre donnée les concernant.
+
+### Créer un compte
 
 L'application ne propose volontairement **aucun formulaire d'inscription** : les
-comptes sont créés à la main, pour que personne ne puisse s'inscrire seul et accéder
-à la caisse.
+comptes se créent à la main, pour que personne ne puisse s'inscrire seul.
 
 1. Ouvrez votre projet sur [supabase.com](https://supabase.com).
 2. **Authentication → Users → Add user → Create new user**.
-3. Saisissez votre adresse e-mail et un mot de passe, cochez **Auto Confirm User**,
+3. Saisissez l'adresse e-mail et un mot de passe, cochez **Auto Confirm User**,
    puis validez.
-4. **Authentication → Sign In / Providers → Email** : désactivez
-   **« Allow new users to sign up »**.
+4. Le nouveau compte apparaît aussitôt dans l'application, sous
+   **Paramètres → Accès du bureau**, avec le profil **Communication**.
+5. Pour en faire un trésorier, changez son profil dans la liste déroulante.
 
-Vous pouvez répéter l'étape 2 pour ajouter d'autres membres du bureau : ils
-partageront la même caisse.
+> Le tout premier compte — celui qui a installé l'application — est trésorier
+> d'office. Les suivants arrivent toujours avec le profil le plus restreint.
+
+### Verrouiller les inscriptions
+
+**Authentication → Sign In / Providers → Email** : désactivez
+**« Allow new users to sign up »**. Sans cela, n'importe qui pourrait créer un
+compte et accéder aux annonces et aux cartes.
 
 ---
 
@@ -295,6 +316,7 @@ scripts/                    Mise en place de la base et import initial
 supabase/schema.sql         Tables, index et règles RLS
 supabase/annonces.sql       Table des annonces + lecture publique
 supabase/cartes.sql         Cartes, identité du comité, stockage des photos
+supabase/roles.sql          Comptes du bureau, rôles et droits d'accès
 public/logo-ucjea.jpg       Logo du comité (remplacer ce fichier pour le changer)
 ```
 
@@ -321,8 +343,9 @@ Sous PowerShell :
 
 ```powershell
 $env:DATABASE_URL = "postgresql://postgres:MOT_DE_PASSE@db.xxxxxxxx.supabase.co:5432/postgres"
-node scripts/setup-db.mjs        # applique schema.sql, annonces.sql et cartes.sql
+node scripts/setup-db.mjs        # applique les quatre fichiers de supabase/
 node scripts/check-cartes.mjs    # vérifie l'installation du module cartes
+node scripts/check-roles.mjs     # vérifie les droits de chaque profil
 node scripts/seed-membres.mjs    # réimporte les 24 membres du registre 2026
 ```
 
@@ -344,6 +367,11 @@ git push
 
 - `members`, `payments` et `reports` sont protégées par **Row Level Security** :
   sans session authentifiée, aucune ligne n'est lisible ni modifiable.
+- Les droits de chaque profil sont appliqués **par la base**, pas par
+  l'interface : un compte Communication qui interrogerait directement l'API
+  Supabase n'obtiendrait aucun paiement. Vous pouvez le vérifier vous-même avec
+  `node scripts/check-roles.mjs`, qui simule chaque profil dans une transaction
+  annulée.
 - Trois exceptions sont publiques, et volontairement : les annonces **publiées**
   (les brouillons restent privés) ; la ligne de paramètres, qui ne contient que le
   nom du comité, sa devise, ses contacts et les montants déjà diffusés à tous ; et

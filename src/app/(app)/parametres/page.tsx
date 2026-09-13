@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Palette, Save, Wallet } from "lucide-react";
+import { Check, Palette, Save, UserCog, Wallet } from "lucide-react";
 import { useData } from "@/components/DataProvider";
 import { Badge, Button, Card, Field, SectionTitle, Spinner } from "@/components/ui";
 import { MONTH_NAMES, exerciseMonths } from "@/lib/cotisations";
 import { formatAmount } from "@/lib/format";
-import type { AccentKey, Settings } from "@/lib/types";
+import { ROLE_LABELS } from "@/lib/types";
+import type { AccentKey, Settings, UserRole } from "@/lib/types";
 
 const ACCENTS: { key: AccentKey; label: string; swatch: string; bg: string }[] = [
   { key: "navy-gold", label: "Bleu marine & or", swatch: "#d9b64a", bg: "#0a0f1b" },
@@ -15,7 +16,7 @@ const ACCENTS: { key: AccentKey; label: string; swatch: string; bg: string }[] =
 ];
 
 export default function ParametresPage() {
-  const { settings, saveSettings, loading } = useData();
+  const { settings, saveSettings, team, setUserRole, loading } = useData();
   const [form, setForm] = useState<Settings>(settings);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -369,6 +370,69 @@ export default function ParametresPage() {
               </button>
             );
           })}
+        </div>
+      </Card>
+
+      {/* ---------- Comptes du bureau ---------- */}
+      <Card className="p-5">
+        <SectionTitle
+          title="Accès du bureau"
+          subtitle="Qui peut se connecter, et jusqu'où."
+        />
+
+        {team.length === 0 ? (
+          <p className="text-sm text-muted">Aucun compte enregistré.</p>
+        ) : (
+          <ul className="divide-y divide-[var(--border)]">
+            {team.map((account) => (
+              <li
+                key={account.user_id}
+                className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <span className="rounded-lg bg-accent-soft p-2 text-accent">
+                  <UserCog size={16} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">
+                    {account.email ?? "compte sans adresse"}
+                  </span>
+                  <span className="text-xs text-muted">
+                    {ROLE_LABELS[account.role]}
+                  </span>
+                </span>
+                <select
+                  className="field w-auto min-w-52"
+                  value={account.role}
+                  onChange={(e) =>
+                    void setUserRole(account.user_id, e.target.value as UserRole)
+                  }
+                >
+                  <option value="tresorier">Trésorier — accès complet</option>
+                  <option value="communication">
+                    Communication — annonces et cartes
+                  </option>
+                </select>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-4 space-y-2 rounded-lg border border-line bg-surface-2 p-3.5 text-xs leading-relaxed text-muted">
+          <p className="font-medium text-ink">Ajouter un compte</p>
+          <p>
+            Les comptes se créent depuis Supabase, jamais depuis cette
+            application : <strong className="text-ink">Authentication → Users →
+            Add user</strong>, en cochant <em>Auto Confirm User</em>. Le nouveau
+            compte arrive automatiquement avec le profil{" "}
+            <em>Communication</em> ; revenez ici pour le passer Trésorier si
+            besoin.
+          </p>
+          <p>
+            Un compte <strong className="text-ink">Communication</strong> ne voit que
+            les Annonces et les Cartes de membre. Les cotisations, les paiements et
+            les montants de la caisse lui sont refusés par la base de données
+            elle-même, pas seulement masqués à l&apos;écran.
+          </p>
         </div>
       </Card>
 

@@ -17,12 +17,14 @@ import {
   type DashboardSummary,
 } from "@/lib/cotisations";
 import type {
+  AppUser,
   Member,
   MemberStats,
   Payment,
   Post,
   Report,
   Settings,
+  UserRole,
 } from "@/lib/types";
 
 /**
@@ -89,6 +91,12 @@ interface DataContextValue {
   reports: Report[];
   /** Annonces, brouillons compris (l'espace trésorier voit tout). */
   posts: Post[];
+  /** Profil du compte connecté ; null tant qu'il n'est pas chargé. */
+  role: UserRole | null;
+  /** Raccourci : le compte connecté a-t-il l'accès complet ? */
+  isTreasurer: boolean;
+  /** Comptes du bureau (visibles de tous, modifiables par le trésorier). */
+  team: AppUser[];
   stats: MemberStats[];
   statsById: Map<string, MemberStats>;
   dashboard: DashboardSummary;
@@ -103,6 +111,10 @@ interface DataContextValue {
   /** Marque / démarque le droit d'adhésion comme réglé. */
   toggleMembershipFee: (memberId: string, paid: boolean) => Promise<void>;
   logReport: (kind: string, label: string, meta?: Record<string, unknown>) => Promise<void>;
+  /** Met à jour les seuls champs de carte d'un membre (accessible aux deux profils). */
+  updateCard: (memberId: string, patch: Partial<Member>) => Promise<void>;
+  /** Change le profil d'un compte du bureau (trésorier uniquement). */
+  setUserRole: (userId: string, role: UserRole) => Promise<void>;
   addPost: (post: NewPost) => Promise<Post | null>;
   updatePost: (id: string, patch: Partial<Post>) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
@@ -126,6 +138,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [team, setTeam] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,16 +153,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [s, m, p, r, a] = await Promise.all([
+      const [s, m, p, r, a, t, roleResult] = await Promise.all([
         supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
         supabase.from("members").select("*").order("last_name"),
         supabase.from("payments").select("*"),
         supabase.from("reports").select("*").order("created_at", { ascending: false }).limit(60),
         supabase.from("posts").select("*").order("published_at", { ascending: false }),
+        supabase.from("app_users").select("*").order("email"),
+        supabase.rpc("mon_role"),
       ]);
 
       const firstError = s.error || m.error || p.error || r.error || a.error;
       if (firstError) throw firstError;
+
+      // Le rôle conditionne l'affichage ; les droits réels sont appliqués
+      // par les règles RLS de la base, pas par l'interface.
+      setRole((roleResult.data as UserRole | null) ?? null);
+      setTeam((t.data ?? []) as AppUser[]);
 
       if (s.data) {
         setSettings({
@@ -320,6 +341,47 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     [supabase],
   );
 
+  /**
+   * Champs de carte d'un membre (numéro, fonction, photo, remise).
+   *
+   * Passe par la fonction SQL maj_carte : c'est la seule écriture sur la table
+   * des membres ouverte au profil « communication », et elle ne touche qu'à
+   * ces quatre colonnes.
+   */
+  const updateCard = useCallback(
+    async (memberId: string, patch: Partial<Member>) => {
+      setMembers((prev) =>
+        prev.map((m) => (m.id === memberId ? { ...m, ...patch } : m)),
+      );
+      const { error: err } = await supabase.rpc("maj_carte", {
+        membre_id: memberId,
+        patch,
+      });
+      if (err) {
+        setError(err.message);
+        await refresh();
+      }
+    },
+    [supabase, refresh],
+  );
+
+  const setUserRole = useCallback(
+    async (userId: string, nextRole: UserRole) => {
+      setTeam((prev) =>
+        prev.map((u) => (u.user_id === userId ? { ...u, role: nextRole } : u)),
+      );
+      const { error: err } = await supabase
+        .from("app_users")
+        .update({ role: nextRole })
+        .eq("user_id", userId);
+      if (err) {
+        setError(err.message);
+        await refresh();
+      }
+    },
+    [supabase, refresh],
+  );
+
   // ----- Annonces publiques ----------------------------------------------
 
   const addPost = useCallback(
@@ -407,6 +469,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     payments,
     reports,
     posts,
+    role,
+    isTreasurer: role === "tresorier",
+    team,
     stats,
     statsById,
     dashboard,
@@ -419,6 +484,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     togglePayment,
     toggleMembershipFee,
     logReport,
+    updateCard,
+    setUserRole,
     addPost,
     updatePost,
     deletePost,

@@ -16,9 +16,10 @@ import { useData } from "@/components/DataProvider";
 import { Badge, Button, Card, Progress, SectionTitle, Spinner } from "@/components/ui";
 import { fullName } from "@/lib/cotisations";
 import {
+  DEFAULT_ROLE,
+  ROLES,
   assignMissingCardNumbers,
   cardProgress,
-  memberRole,
   verificationUrl,
 } from "@/lib/cartes";
 import {
@@ -36,7 +37,7 @@ import type { Member } from "@/lib/types";
  * et génération du PDF prêt à imprimer.
  */
 export default function CartesPage() {
-  const { members, settings, supabase, updateMember, refresh, loading, ready, logReport } =
+  const { members, settings, supabase, updateCard, refresh, loading, ready, logReport } =
     useData();
 
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -82,8 +83,13 @@ export default function CartesPage() {
   async function assignNumbers() {
     setBusy("numeros");
     const assignments = assignMissingCardNumbers(members, settings);
+    // Passe par maj_carte : cette fonction est la seule écriture sur les
+    // membres ouverte au profil « communication ».
     for (const a of assignments) {
-      await supabase.from("members").update({ card_number: a.card_number }).eq("id", a.id);
+      await supabase.rpc("maj_carte", {
+        membre_id: a.id,
+        patch: { card_number: a.card_number },
+      });
     }
     await refresh();
     setBusy(null);
@@ -95,7 +101,7 @@ export default function CartesPage() {
       const path = await uploadPhoto(supabase, member.id, file);
       // L'ancien fichier n'a plus d'utilité une fois le nouveau enregistré.
       const previous = member.photo_path;
-      await updateMember(member.id, { photo_path: path });
+      await updateCard(member.id, { photo_path: path });
       if (previous && previous !== path) await deletePhoto(supabase, previous);
       await loadPhotoUrls();
     } catch (e) {
@@ -111,7 +117,7 @@ export default function CartesPage() {
   async function removePhoto(member: Member) {
     setBusy("photo-" + member.id);
     await deletePhoto(supabase, member.photo_path);
-    await updateMember(member.id, { photo_path: null });
+    await updateCard(member.id, { photo_path: null });
     setUrls((prev) => {
       const next = { ...prev };
       delete next[member.id];
@@ -276,9 +282,10 @@ export default function CartesPage() {
               busy={busy === "photo-" + member.id}
               disabled={busy !== null}
               onPhoto={(file) => void onPhotoSelected(member, file)}
+              onRole={(value) => void updateCard(member.id, { role: value })}
               onRemovePhoto={() => void removePhoto(member)}
               onToggleIssued={() =>
-                void updateMember(member.id, {
+                void updateCard(member.id, {
                   card_issued_at: member.card_issued_at ? null : new Date().toISOString(),
                 })
               }
@@ -303,6 +310,7 @@ function MemberCardRow({
   busy,
   disabled,
   onPhoto,
+  onRole,
   onRemovePhoto,
   onToggleIssued,
   onGenerate,
@@ -312,6 +320,7 @@ function MemberCardRow({
   busy: boolean;
   disabled: boolean;
   onPhoto: (file: File) => void;
+  onRole: (role: string) => void;
   onRemovePhoto: () => void;
   onToggleIssued: () => void;
   onGenerate: () => void;
@@ -339,9 +348,25 @@ function MemberCardRow({
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{fullName(member)}</p>
         <p className="mt-0.5 truncate text-xs text-muted">
-          {memberRole(member)}
-          {member.card_number ? " · " + member.card_number : " · numéro à attribuer"}
+          {member.card_number ?? "Numéro à attribuer"}
         </p>
+        {/* La fonction imprimée sur la carte se règle directement ici. */}
+        <input
+          list="fonctions-carte"
+          defaultValue={member.role ?? ""}
+          placeholder={DEFAULT_ROLE}
+          disabled={disabled}
+          onBlur={(e) => {
+            const next = e.target.value.trim();
+            if (next !== (member.role ?? "").trim()) onRole(next);
+          }}
+          className="mt-1 w-full max-w-56 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-xs text-muted transition hover:border-line focus:border-line focus:bg-surface-2 focus:text-ink"
+        />
+        <datalist id="fonctions-carte">
+          {ROLES.map((r) => (
+            <option key={r} value={r} />
+          ))}
+        </datalist>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
