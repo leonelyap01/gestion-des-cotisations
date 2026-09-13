@@ -13,8 +13,8 @@ export function PublicTabs({ showVision }: { showVision: boolean }) {
   const pathname = usePathname();
 
   const tabs = [
-    { href: "/infos", label: "Actualités" },
-    ...(showVision ? [{ href: "/infos/vision", label: "Notre vision" }] : []),
+    { href: "/", label: "Actualités" },
+    ...(showVision ? [{ href: "/vision", label: "Notre vision" }] : []),
   ];
 
   // Un seul onglet : la barre n'apporterait rien.

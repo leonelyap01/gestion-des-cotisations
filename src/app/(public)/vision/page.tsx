@@ -6,7 +6,7 @@ import { coverUrl } from "@/lib/media";
 
 /**
  * Onglet « Notre vision » : le texte rédigé par le bureau depuis
- * Paramètres → Notre vision. Les sauts de ligne sont conservés tels quels,
+ * Annonces → Notre vision. Les sauts de ligne sont conservés tels quels,
  * ce qui permet d'écrire des paragraphes et des listes à la main.
  */
 
@@ -28,7 +28,7 @@ export default async function VisionPage() {
             Le bureau n&apos;a pas encore publié la vision du comité.
           </p>
           <Link
-            href="/infos"
+            href="/"
             className="mt-5 inline-block text-sm text-accent hover:underline"
           >
             Voir les actualités

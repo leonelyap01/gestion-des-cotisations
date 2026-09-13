@@ -9,6 +9,7 @@ import {
   FileText,
   IdCard,
   LayoutDashboard,
+  Globe,
   Lock,
   LogOut,
   Megaphone,
@@ -20,6 +21,7 @@ import {
 import { useData } from "./DataProvider";
 import { Spinner } from "./ui";
 import { ROLE_LABELS } from "@/lib/types";
+import { HOME_AFTER_LOGIN, HOME_COMMUNICATION, PUBLIC_HOME } from "@/lib/routes";
 import type { UserRole } from "@/lib/types";
 
 /**
@@ -31,7 +33,7 @@ const ALL: UserRole[] = ["tresorier", "communication"];
 const TRESORIER: UserRole[] = ["tresorier"];
 
 const NAV = [
-  { href: "/", label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard, primary: true, roles: TRESORIER },
+  { href: HOME_AFTER_LOGIN, label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard, primary: true, roles: TRESORIER },
   { href: "/membres", label: "Membres", short: "Membres", icon: Users, primary: true, roles: TRESORIER },
   { href: "/cotisations", label: "Cotisations", short: "Cotis.", icon: CalendarCheck2, primary: true, roles: TRESORIER },
   { href: "/alertes", label: "Alertes", short: "Alertes", icon: AlertTriangle, primary: true, roles: TRESORIER },
@@ -57,7 +59,7 @@ function isAllowed(role: UserRole | null, pathname: string): boolean {
 }
 
 function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return pathname.startsWith(href);
 }
 
 /**
@@ -112,7 +114,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Le profil « communication » n'a pas de tableau de bord : sa page
   // d'accueil est la rédaction des annonces.
   useEffect(() => {
-    if (role === "communication" && pathname === "/") router.replace("/annonces");
+    if (role === "communication" && pathname === HOME_AFTER_LOGIN) {
+      router.replace(HOME_COMMUNICATION);
+    }
   }, [role, pathname, router]);
 
   // Hauteur à réserver en bas de page pour le badge de l'hébergeur.
@@ -174,7 +178,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="border-t border-line p-3">
+        <div className="space-y-1 border-t border-line p-3">
+          <Link
+            href={PUBLIC_HOME}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted transition hover:bg-surface-2 hover:text-ink"
+          >
+            <Globe size={18} />
+            Voir le site public
+          </Link>
           <button
             onClick={() => {
               setSigningOut(true);
@@ -197,16 +208,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <p className="truncate text-sm font-semibold">{settings.association_name}</p>
             <p className="text-xs text-muted">Exercice {settings.exercise_year}</p>
           </div>
-          <button
-            onClick={() => {
-              setSigningOut(true);
-              void signOut();
-            }}
-            aria-label="Se déconnecter"
-            className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <Link
+              href={PUBLIC_HOME}
+              aria-label="Voir le site public"
+              className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink"
+            >
+              <Globe size={18} />
+            </Link>
+            <button
+              onClick={() => {
+                setSigningOut(true);
+                void signOut();
+              }}
+              aria-label="Se déconnecter"
+              className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </header>
 
         {error && (

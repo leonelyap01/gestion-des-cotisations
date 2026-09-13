@@ -10,7 +10,7 @@ import { cashPointMessage } from "@/lib/messages";
 import type { Post } from "@/lib/types";
 
 /**
- * Rédaction d'une annonce publiée sur la page publique /infos.
+ * Rédaction d'une annonce publiée sur la page publique (racine du site).
  *
  * Une annonce non publiée reste un brouillon : elle n'est visible que dans
  * l'espace trésorier.

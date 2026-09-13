@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Post, Settings } from "@/lib/types";
 
 /**
- * Lectures de la partie publique du site (/infos, /carte).
+ * Lectures de la partie publique du site (accueil, vision, carte).
  *
  * `cache()` déduplique l'appel au sein d'un même rendu : la mise en page et la
  * page qu'elle contient demandent toutes deux les paramètres, mais la base

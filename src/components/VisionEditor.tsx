@@ -48,7 +48,7 @@ export function VisionEditor() {
         subtitle="Second onglet de la page publique, à côté des actualités."
         action={
           <a
-            href="/infos/vision"
+            href="/vision"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"

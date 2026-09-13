@@ -95,7 +95,7 @@ export interface Payment {
 /** Catégorie d'une annonce, qui détermine sa pastille de couleur. */
 export type PostCategory = "info" | "annonce" | "evenement" | "urgent";
 
-/** Actualité affichée sur la page publique /infos. */
+/** Actualité affichée sur la page publique (racine du site). */
 export interface Post {
   id: string;
   title: string;

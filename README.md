@@ -27,7 +27,7 @@ n'est perdu entre deux sessions.
 
 | Page | Contenu |
 |---|---|
-| **Tableau de bord** | Théorique attendu, réellement perçu, manque à gagner, taux de recouvrement global et par mois, évolution mensuelle (barres), répartition soldés / non soldés (donut). |
+| **Tableau de bord** (`/tableau-de-bord`) | Théorique attendu, réellement perçu, manque à gagner, taux de recouvrement global et par mois, évolution mensuelle (barres), répartition soldés / non soldés (donut). |
 | **Membres** | Ajout, modification, suppression, historique complet. Recherche et filtres : à jour, 1 / 2 / 3+ mois d'arriérés, n'ayant jamais soldé, ayant soldé au moins un mois, signalés, droit d'adhésion impayé, membres retirés. |
 | **Cotisations** | La grille : une ligne par membre, une colonne par mois. Un clic marque un mois soldé (la date d'enregistrement est conservée). |
 | **Alertes** | Membres signalés en vue d'un retrait, arriérés importants, droits d'adhésion en attente. |
@@ -35,7 +35,7 @@ n'est perdu entre deux sessions.
 | **Cartes de membre** | Collecte des photos, attribution des numéros, génération du PDF des cartes prêt à découper. |
 | **Rapports** | Export PDF et Word de la grille (A4 paysage), PDF du point de caisse, 4 messages WhatsApp, historique daté des générations. |
 | **Paramètres** | Accès du bureau (rôles des comptes), identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
-| **`/infos`** *(publique)* | Espace membres, consultable **sans compte** : onglet Actualités et onglet Notre vision. |
+| **`/`** *(publique)* | Accueil du site, consultable **sans compte** : onglet Actualités, onglet Notre vision, bouton « Se connecter ». |
 | **`/carte/…`** *(publique)* | Vérification d'une carte de membre — cible du QR code imprimé sur les cartes. |
 
 **Stack** : Next.js 15 (App Router) · TailwindCSS 4 · Supabase (PostgreSQL + Auth) ·
@@ -117,7 +117,8 @@ node scripts/setup-db.mjs
 npm run dev
 ```
 
-L'application est disponible sur http://localhost:3000.
+Le site public est sur http://localhost:3000 ; le bouton **Se connecter** mène à
+l'espace du bureau.
 
 ---
 
@@ -226,12 +227,13 @@ ligne sont conservés tels quels.
 - Une **image de couverture** est facultative : recadrée en 16/9 et compressée
   dans le navigateur avant l'envoi, pour rester légère en connexion mobile.
 
-Les membres consultent tout cela sur **`/infos`** — par exemple
-`https://votre-site.netlify.app/infos` — sans aucun compte. Le bouton **Message
+Les membres consultent tout cela sur la **racine du site** — par exemple
+`https://votre-site.netlify.app` — sans aucun compte. Un bouton « Se connecter »
+en haut de page mène à l'espace du bureau. Le bouton **Message
 WhatsApp** de la page Annonces copie un texte tout prêt contenant ce lien, à coller
 dans le groupe.
 
-> **Ce qui est public et ce qui ne l'est pas.** La page `/infos` expose uniquement :
+> **Ce qui est public et ce qui ne l'est pas.** L'accueil expose uniquement :
 > les annonces publiées, le nom de l'association, les montants en vigueur et les
 > coordonnées de paiement. La liste des membres, les paiements, les arriérés et les
 > rapports ne sont **jamais** accessibles sans connexion — la base les refuse au
@@ -274,7 +276,7 @@ rien d'autre. C'est ce qui permet de vérifier une carte présentée en réunion
 Page **Annonces → Notre vision** — accessible aux deux profils, puisqu'il
 s'agit de contenu public. Rédigez le texte, enregistrez : un onglet
 **Notre vision** apparaît aussitôt sur la page publique, à côté des actualités,
-à l'adresse `/infos/vision`.
+à l'adresse `/vision`.
 
 Les retours à la ligne sont conservés — vous pouvez écrire des paragraphes ou
 une liste à puces. La devise du comité est reprise en tête de la page, et vous
@@ -297,7 +299,7 @@ page.
 src/
 ├── app/
 │   ├── (app)/              Pages protégées par l'authentification
-│   │   ├── page.tsx            Tableau de bord
+│   │   ├── tableau-de-bord/    Tableau de bord
 │   │   ├── membres/            Liste + fiche individuelle
 │   │   ├── cotisations/        La grille mensuelle
 │   │   ├── alertes/            Signalements
@@ -305,9 +307,10 @@ src/
 │   │   ├── cartes/             Atelier des cartes de membre
 │   │   ├── rapports/           Exports et messages
 │   │   └── parametres/         Réglages
-│   ├── infos/              ★ Espace public : mise en page + onglets
-│   │   ├── page.tsx            Onglet Actualités
-│   │   └── vision/             Onglet Notre vision
+│   ├── (public)/           ★ Site public, à la racine
+│   │   ├── layout.tsx          En-tête, onglets, bouton de connexion
+│   │   ├── page.tsx            « / » — Actualités
+│   │   └── vision/             « /vision » — Notre vision
 │   ├── carte/[id]/         ★ Vérification publique d'une carte (QR code)
 │   ├── login/              Connexion
 │   ├── layout.tsx
@@ -326,6 +329,7 @@ src/
 │   ├── cotisations.ts      ★ Toutes les règles métier (fonctions pures)
 │   ├── cotisations.test.ts   Les 18 tests de ces règles
 │   ├── messages.ts         Messages WhatsApp
+│   ├── routes.ts           Adresses structurantes (accueil, tableau de bord…)
 │   ├── posts.ts            Catégories et tri des annonces
 │   ├── public-data.ts      Lectures de l'espace public (mutualisées)
 │   ├── media.ts            Adresses des images de couverture
@@ -335,7 +339,7 @@ src/
 │   ├── types.ts
 │   ├── exports/            PDF (@react-pdf), Word (docx) et cartes
 │   └── supabase/           Clients navigateur et serveur
-├── middleware.ts           Redirige vers /login (sauf /infos et /carte/…)
+├── middleware.ts           Redirige vers /login (sauf /, /vision et /carte/…)
 scripts/                    Mise en place de la base et import initial
 supabase/schema.sql         Tables, index et règles RLS
 supabase/annonces.sql       Table des annonces + lecture publique
@@ -411,7 +415,8 @@ git push
   (`verifier_carte`) : la table des membres, elle, reste fermée aux visiteurs
   anonymes.
 - Le middleware renvoie vers `/login` toute requête non authentifiée, à
-  l'exception de la page publique `/infos`.
+  l'exception du site public (`/`, `/vision`, `/carte/…`). Les anciennes
+  adresses `/infos` redirigent vers les nouvelles.
 - `.env.local` est ignoré par Git ; il ne contient de toute façon que les deux clés
   publiques.
 - **Le mot de passe de la base de données ne doit jamais être placé dans un fichier

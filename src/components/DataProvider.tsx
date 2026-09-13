@@ -459,7 +459,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    window.location.href = "/login";
+    window.location.href = "/";
   }, [supabase]);
 
   // -----------------------------------------------------------------------

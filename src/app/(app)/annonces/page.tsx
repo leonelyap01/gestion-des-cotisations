@@ -31,7 +31,7 @@ import { copyToClipboard, formatDate } from "@/lib/format";
 import type { Post } from "@/lib/types";
 
 /**
- * Espace de rédaction des annonces affichées sur la page publique /infos.
+ * Espace de rédaction des annonces affichées sur la page publique (racine du site).
  */
 export default function AnnoncesPage() {
   const { posts, settings, updatePost, deletePost, logReport, loading, ready } =
@@ -45,7 +45,7 @@ export default function AnnoncesPage() {
 
   // L'adresse publique dépend du domaine servant l'application.
   useEffect(() => {
-    setPublicUrl(window.location.origin + "/infos");
+    setPublicUrl(window.location.origin + "/");
   }, []);
 
   if (!ready || (loading && posts.length === 0)) return <Spinner />;
@@ -118,7 +118,7 @@ export default function AnnoncesPage() {
             {copied === "message" ? "Copié !" : "Message WhatsApp"}
           </Button>
           <a
-            href="/infos"
+            href="/"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-line px-3.5 py-2 text-sm text-ink transition hover:bg-surface-2"

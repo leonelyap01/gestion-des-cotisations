@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Wallet } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Button, Field } from "@/components/ui";
+import { HOME_AFTER_LOGIN, PUBLIC_HOME } from "@/lib/routes";
 
 /**
  * Connexion du trésorier (Supabase Auth, email + mot de passe).
@@ -41,7 +43,7 @@ function LoginForm() {
       return;
     }
 
-    const next = params.get("suivant") || "/";
+    const next = params.get("suivant") || HOME_AFTER_LOGIN;
     router.push(next);
     router.refresh();
   }
@@ -104,6 +106,12 @@ function LoginForm() {
 
         <p className="mt-5 text-center text-xs text-muted">
           Accès réservé au bureau du comité.
+        </p>
+
+        <p className="mt-3 text-center text-sm">
+          <Link href={PUBLIC_HOME} className="text-muted hover:text-accent">
+            ← Retour au site
+          </Link>
         </p>
       </div>
     </div>

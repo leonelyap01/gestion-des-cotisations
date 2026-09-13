@@ -1,7 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
+import { LayoutDashboard, LogIn } from "lucide-react";
 import { PublicTabs } from "@/components/PublicTabs";
+import { createClient } from "@/lib/supabase/server";
+import { HOME_AFTER_LOGIN } from "@/lib/routes";
 import { getPublicSettings } from "@/lib/public-data";
 import { formatAmount } from "@/lib/format";
 
@@ -9,7 +12,7 @@ import { formatAmount } from "@/lib/format";
  * Espace public du comité : en-tête, onglets et pied de page communs aux
  * actualités et à la page « Notre vision ».
  *
- * Consultable sans compte : le middleware laisse passer /infos, et les règles
+ * Consultable sans compte : le middleware laisse passer la racine, et les règles
  * RLS n'exposent que les annonces publiées et la ligne de paramètres. Les
  * membres, les paiements et les rapports restent strictement privés.
  */
@@ -21,12 +24,18 @@ export const metadata: Metadata = {
   description: "Informations et annonces destinées aux membres du comité.",
 };
 
-export default async function InfosLayout({
+export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const settings = await getPublicSettings();
+  const [settings, supabase] = await Promise.all([getPublicSettings(), createClient()]);
+
+  // Un membre du bureau déjà connecté voit « Mon espace » plutôt que
+  // « Se connecter » ; pour tout autre visiteur, l'appel renvoie simplement null.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const name = settings?.association_name ?? "Comité";
   const currency = settings?.currency ?? "FCFA";
@@ -39,7 +48,18 @@ export default async function InfosLayout({
       data-accent={settings?.accent ?? "emerald"}
       className="min-h-screen bg-bg text-ink"
     >
-      <div className="mx-auto max-w-3xl px-4 pb-24 pt-8 sm:px-6 sm:pb-28 sm:pt-12">
+      <div className="mx-auto max-w-3xl px-4 pb-24 pt-6 sm:px-6 sm:pb-28 sm:pt-8">
+        {/* ---------- Barre d'accès ---------- */}
+        <div className="mb-6 flex justify-end">
+          <Link
+            href={user ? HOME_AFTER_LOGIN : "/login"}
+            className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm text-ink transition hover:border-accent hover:text-accent"
+          >
+            {user ? <LayoutDashboard size={16} /> : <LogIn size={16} />}
+            {user ? "Mon espace" : "Se connecter"}
+          </Link>
+        </div>
+
         {/* ---------- En-tête ---------- */}
         <header className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
           <Image
@@ -100,8 +120,8 @@ export default async function InfosLayout({
             {settings?.city && <span>· {settings.city}</span>}
             {settings?.phone && <span>· {settings.phone}</span>}
           </span>
-          <Link href="/login" className="hover:text-accent">
-            Espace trésorier
+          <Link href={user ? HOME_AFTER_LOGIN : "/login"} className="hover:text-accent">
+            {user ? "Mon espace" : "Espace du bureau"}
           </Link>
         </footer>
       </div>

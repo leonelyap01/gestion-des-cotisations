@@ -115,7 +115,7 @@ export default async function VerificationPage({
           Page de vérification officielle. Aucune information financière n&apos;y est
           publiée.
           <br />
-          <Link href="/infos" className="mt-1 inline-block hover:text-accent">
+          <Link href="/" className="mt-1 inline-block hover:text-accent">
             Actualités du comité
           </Link>
         </p>

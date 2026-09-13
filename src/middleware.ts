@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { HOME_AFTER_LOGIN } from "@/lib/routes";
 
 /**
  * Middleware d'authentification.
@@ -41,12 +42,18 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isLogin = pathname.startsWith("/login");
-  // Pages publiques : les actualités destinées aux membres, et la vérification
-  // d'une carte de membre (cible du QR code imprimé sur les cartes).
+
+  /*
+   * Partie publique du site : l'accueil et ses onglets, la vérification d'une
+   * carte de membre (cible du QR code), et les anciennes adresses /infos
+   * conservées en redirection. Tout le reste demande une session.
+   */
   const isPublic =
+    pathname === "/" ||
+    pathname === "/vision" ||
+    pathname.startsWith("/carte/") ||
     pathname === "/infos" ||
-    pathname.startsWith("/infos/") ||
-    pathname.startsWith("/carte/");
+    pathname.startsWith("/infos/");
 
   if (!user && !isLogin && !isPublic) {
     const redirect = request.nextUrl.clone();
@@ -55,9 +62,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirect);
   }
 
+  // Déjà connecté : la page de connexion n'a plus d'objet.
   if (user && isLogin) {
     const redirect = request.nextUrl.clone();
-    redirect.pathname = "/";
+    redirect.pathname = HOME_AFTER_LOGIN;
     redirect.search = "";
     return NextResponse.redirect(redirect);
   }
