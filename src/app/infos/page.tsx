@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { POST_CATEGORIES, categoryColor, sortPosts } from "@/lib/posts";
 import { getPublishedPosts } from "@/lib/public-data";
 import { formatDate } from "@/lib/format";
+import { coverUrl } from "@/lib/media";
 
 /** Onglet « Actualités » : les annonces publiées par le bureau. */
 
@@ -27,9 +28,21 @@ export default async function ActualitesPage() {
           {posts.map((post) => (
             <li key={post.id}>
               <article
-                className="card overflow-hidden border-l-4 p-5 sm:p-6"
+                className="card overflow-hidden border-l-4"
                 style={{ borderLeftColor: categoryColor(post.category) }}
               >
+                {coverUrl(post.cover_path) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={coverUrl(post.cover_path)!}
+                    alt=""
+                    loading="lazy"
+                    className="block max-h-72 w-full object-cover"
+                    style={{ aspectRatio: "16 / 9" }}
+                  />
+                )}
+
+                <div className="p-5 sm:p-6">
                 <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
                   <span
                     className="rounded-full px-2.5 py-0.5 font-medium"
@@ -58,6 +71,7 @@ export default async function ActualitesPage() {
                     {post.body}
                   </p>
                 )}
+                </div>
               </article>
             </li>
           ))}

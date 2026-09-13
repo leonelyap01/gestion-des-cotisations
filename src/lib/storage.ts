@@ -10,6 +10,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { COVER_BUCKET } from "./media";
 
 export const PHOTO_BUCKET = "photos";
 
@@ -135,6 +136,85 @@ export async function toArrayBuffer(url: string): Promise<ArrayBuffer | null> {
   } catch {
     return null;
   }
+}
+
+/* =========================================================================
+   Images de couverture des annonces et de la page « Notre vision »
+
+   Bucket PUBLIC : ces images s'affichent pour des visiteurs sans session.
+   Rien de sensible n'y est déposé — les portraits des membres restent dans
+   le bucket privé « photos ».
+   ========================================================================= */
+
+/** Largeur maximale d'une couverture, en pixels. */
+const MAX_COVER_WIDTH = 1600;
+
+/** Proportions d'une couverture : format paysage 16/9. */
+const COVER_RATIO = 16 / 9;
+
+/** Recadre une image en 16/9, la réduit et la convertit en JPEG. */
+export async function prepareCover(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+
+  let sx = 0;
+  let sy = 0;
+  let sw = bitmap.width;
+  let sh = bitmap.height;
+
+  if (bitmap.width / bitmap.height > COVER_RATIO) {
+    sw = Math.round(bitmap.height * COVER_RATIO);
+    sx = Math.round((bitmap.width - sw) / 2);
+  } else {
+    sh = Math.round(bitmap.width / COVER_RATIO);
+    sy = Math.round((bitmap.height - sh) / 2);
+  }
+
+  const width = Math.min(MAX_COVER_WIDTH, sw);
+  const height = Math.round(width / COVER_RATIO);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Impossible de préparer l'image sur cet appareil.");
+  ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, width, height);
+  bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.82),
+  );
+  if (!blob) throw new Error("La conversion de l'image a échoué.");
+  return blob;
+}
+
+/**
+ * Envoie une couverture et renvoie son chemin de stockage.
+ *
+ * @param prefix « annonces » ou « vision », pour garder le bucket lisible.
+ */
+export async function uploadCover(
+  supabase: SupabaseClient,
+  prefix: string,
+  file: File,
+): Promise<string> {
+  const blob = await prepareCover(file);
+  const path = prefix + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + ".jpg";
+
+  const { error } = await supabase.storage
+    .from(COVER_BUCKET)
+    .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+
+  if (error) throw error;
+  return path;
+}
+
+export async function deleteCover(
+  supabase: SupabaseClient,
+  path: string | null,
+): Promise<void> {
+  if (!path) return;
+  await supabase.storage.from(COVER_BUCKET).remove([path]);
 }
 
 /**

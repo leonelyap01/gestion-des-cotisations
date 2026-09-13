@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Check, Compass, Palette, Save, UserCog, Wallet } from "lucide-react";
 import { useData } from "@/components/DataProvider";
@@ -44,8 +45,11 @@ export default function ParametresPage() {
     setBusy(true);
     // On ne conserve que les mois compris dans la plage de l'exercice.
     const months = exerciseMonths(form);
+    // `vision` et sa couverture ont leur propre écriture (maj_vision), pour
+    // rester accessibles au profil « communication ».
+    const { vision: _v, vision_cover: _c, ...reste } = form;
     await saveSettings({
-      ...form,
+      ...reste,
       monthly_amount: Number(form.monthly_amount) || 0,
       membership_fee: Number(form.membership_fee) || 0,
       active_months: form.active_months.filter((m) => months.includes(m)),
@@ -167,46 +171,19 @@ export default function ParametresPage() {
         </p>
       </Card>
 
-      {/* ---------- Notre vision (page publique) ---------- */}
-      <Card className="p-5">
-        <SectionTitle
-          title="Notre vision"
-          subtitle="Publiée dans un onglet de la page publique, à côté des actualités."
-          action={
-            <a
-              href="/infos/vision"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
-            >
-              <Compass size={15} /> Voir la page
-            </a>
-          }
-        />
-
-        <Field
-          label="Texte"
-          hint="Les retours à la ligne sont conservés : vous pouvez écrire des paragraphes ou une liste."
-        >
-          <textarea
-            className="field min-h-52 resize-y leading-relaxed"
-            value={form.vision}
-            onChange={(e) => set("vision", e.target.value)}
-            placeholder={
-              "Notre comité œuvre pour…\n\n" +
-              "Nos valeurs : solidarité, unité, respect, développement de notre communauté.\n\n" +
-              "Nos objectifs pour l'année :\n" +
-              "• …\n• …"
-            }
-          />
-        </Field>
-
-        <p className="mt-3 rounded-lg border border-line bg-surface-2 p-3 text-xs leading-relaxed text-muted">
-          {form.vision.trim()
-            ? "L'onglet « Notre vision » est visible sur la page publique."
-            : "Tant que ce texte est vide, l'onglet « Notre vision » n'apparaît pas sur la page publique."}{" "}
-          Ce contenu est lisible par toute personne disposant du lien.
+      {/* ---------- Renvoi vers la rédaction du contenu public ---------- */}
+      <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
+        <p className="flex items-center gap-2.5 text-sm text-muted">
+          <Compass size={16} className="shrink-0 text-accent" />
+          Le texte « Notre vision » se rédige avec les annonces, pour que le
+          bureau de la communication puisse l&apos;alimenter.
         </p>
+        <Link
+          href="/annonces"
+          className="text-sm text-accent hover:underline"
+        >
+          Aller aux annonces
+        </Link>
       </Card>
 
       {/* ---------- Montants ---------- */}

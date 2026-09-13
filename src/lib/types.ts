@@ -52,6 +52,8 @@ export interface Settings {
   card_prefix: string;
   /** Texte de l'onglet « Notre vision » ; vide = onglet masqué. */
   vision: string;
+  /** Couverture de l'onglet « Notre vision » (bucket public). */
+  vision_cover: string | null;
 
   updated_at?: string;
 }
@@ -104,6 +106,8 @@ export interface Post {
   /** false = brouillon, visible uniquement dans l'espace trésorier. */
   published: boolean;
   published_at: string;
+  /** Image de couverture (bucket public) ; null = aucune. */
+  cover_path: string | null;
   created_at: string;
   updated_at: string;
 }

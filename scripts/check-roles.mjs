@@ -112,6 +112,28 @@ if (cobaye) {
   }
   console.log("   maj_carte (champs de carte) →", carte, "  (attendu : autorisée)");
 
+  // Écriture directe des paramètres : doit être refusée.
+  let params = "autorisée (PROBLÈME)";
+  try {
+    const r = await client.query(
+      "update public.settings set monthly_amount = monthly_amount where id = 1",
+    );
+    params = r.rowCount === 0 ? "bloquée par RLS (0 ligne modifiée)" : "autorisée (PROBLÈME)";
+  } catch {
+    params = "refusée";
+  }
+  console.log("   écriture directe sur settings →", params);
+
+  // Texte « Notre vision » via maj_vision : doit passer.
+  let visionWrite = "échec";
+  try {
+    await client.query("select public.maj_vision('Test', null)");
+    visionWrite = "autorisée";
+  } catch (e) {
+    visionWrite = "refusée (" + e.message.split("\n")[0] + ")";
+  }
+  console.log("   maj_vision (texte public) →", visionWrite, "  (attendu : autorisée)");
+
   await client.query("rollback");
 
   // --- Contrôle de non-régression : le trésorier garde tous ses droits ---

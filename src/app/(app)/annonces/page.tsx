@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useData } from "@/components/DataProvider";
 import { PostForm } from "@/components/PostForm";
+import { VisionEditor } from "@/components/VisionEditor";
 import {
   Badge,
   Button,
@@ -25,6 +26,7 @@ import {
   Spinner,
 } from "@/components/ui";
 import { POST_CATEGORIES, categoryColor, excerpt, sortPosts } from "@/lib/posts";
+import { coverUrl } from "@/lib/media";
 import { copyToClipboard, formatDate } from "@/lib/format";
 import type { Post } from "@/lib/types";
 
@@ -131,6 +133,9 @@ export default function AnnoncesPage() {
         </p>
       </Card>
 
+      {/* ---------- Notre vision ---------- */}
+      <VisionEditor />
+
       {/* ---------- Annonces publiées ---------- */}
       {ordered.length === 0 ? (
         <Card>
@@ -235,6 +240,14 @@ function PostRow({
       style={{ borderLeftColor: color }}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
+        {coverUrl(post.cover_path) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverUrl(post.cover_path)!}
+            alt=""
+            className="h-14 w-24 shrink-0 rounded-lg border border-line object-cover"
+          />
+        )}
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
             <span

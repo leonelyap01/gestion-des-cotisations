@@ -47,7 +47,34 @@ create policy "posts_manage" on public.posts
 --  vide, l'onglet n'apparaît pas sur la page publique.
 -- ---------------------------------------------------------------------
 alter table public.settings
-  add column if not exists vision text not null default '';
+  add column if not exists vision text not null default '',
+  -- Chemin de l'image de couverture dans le bucket « couvertures »
+  add column if not exists vision_cover text;
+
+-- Image de couverture d'une annonce (facultative).
+alter table public.posts
+  add column if not exists cover_path text;
+
+-- ---------------------------------------------------------------------
+--  Images de couverture
+--
+--  Bucket PUBLIC : ces images s'affichent sur la page publique, donc pour
+--  des visiteurs sans session. Rien de sensible n'y est déposé — les
+--  portraits des membres restent, eux, dans le bucket privé « photos ».
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('couvertures', 'couvertures', true, 5242880)
+on conflict (id) do update set public = true, file_size_limit = 5242880;
+
+drop policy if exists "couvertures_public_read" on storage.objects;
+create policy "couvertures_public_read" on storage.objects
+  for select to anon, authenticated
+  using (bucket_id = 'couvertures');
+
+drop policy if exists "couvertures_manage" on storage.objects;
+create policy "couvertures_manage" on storage.objects
+  for all to authenticated
+  using (bucket_id = 'couvertures') with check (bucket_id = 'couvertures');
 
 -- ---------------------------------------------------------------------
 --  La page publique affiche le nom de l'association, les montants en

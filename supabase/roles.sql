@@ -199,3 +199,42 @@ $$;
 
 revoke all on function public.maj_carte(uuid, jsonb) from public;
 grant execute on function public.maj_carte(uuid, jsonb) to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 9. Texte de l'onglet « Notre vision »
+--
+--    Contenu de la page publique, au même titre que les annonces : le
+--    profil « communication » doit pouvoir le rédiger. Cette fonction est
+--    sa seule porte d'écriture sur la table des paramètres, et elle ne
+--    touche qu'à la colonne vision — jamais aux montants, à l'exercice ni
+--    aux coordonnées de paiement.
+-- ---------------------------------------------------------------------
+-- Signature remplacée lors de l'ajout des images de couverture.
+drop function if exists public.maj_vision(text);
+
+create or replace function public.maj_vision(texte text, couverture text)
+returns public.settings
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  resultat public.settings;
+begin
+  if public.mon_role() is null then
+    raise exception 'Accès refusé : compte sans rôle attribué.';
+  end if;
+
+  update public.settings
+     set vision       = coalesce(texte, ''),
+         vision_cover = nullif(couverture, ''),
+         updated_at   = now()
+   where id = 1
+  returning * into resultat;
+
+  return resultat;
+end;
+$$;
+
+revoke all on function public.maj_vision(text, text) from public;
+grant execute on function public.maj_vision(text, text) to authenticated;

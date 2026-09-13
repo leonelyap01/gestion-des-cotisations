@@ -56,6 +56,7 @@ const DEFAULT_SETTINGS: Settings = {
   logo_url: "/logo-ucjea.jpg",
   card_prefix: "UCJEA",
   vision: "",
+  vision_cover: null,
 };
 
 export type NewMember = {
@@ -78,6 +79,8 @@ export type NewPost = {
   category: Post["category"];
   pinned: boolean;
   published: boolean;
+  /** Chemin de la couverture dans le bucket public ; null = aucune. */
+  cover_path: string | null;
 };
 
 interface DataContextValue {
@@ -116,6 +119,8 @@ interface DataContextValue {
   updateCard: (memberId: string, patch: Partial<Member>) => Promise<void>;
   /** Change le profil d'un compte du bureau (trésorier uniquement). */
   setUserRole: (userId: string, role: UserRole) => Promise<void>;
+  /** Enregistre le texte « Notre vision » (accessible aux deux profils). */
+  saveVision: (texte: string, couverture: string | null) => Promise<boolean>;
   addPost: (post: NewPost) => Promise<Post | null>;
   updatePost: (id: string, patch: Partial<Post>) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
@@ -383,6 +388,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     [supabase, refresh],
   );
 
+  /**
+   * Texte « Notre vision » de la page publique.
+   *
+   * Passe par la fonction SQL maj_vision : c'est la seule écriture sur la
+   * table des paramètres ouverte au profil « communication », et elle ne
+   * touche qu'à cette colonne.
+   */
+  const saveVision = useCallback(
+    async (texte: string, couverture: string | null) => {
+      setSettings((prev) => ({ ...prev, vision: texte, vision_cover: couverture }));
+      const { error: err } = await supabase.rpc("maj_vision", {
+        texte,
+        couverture,
+      });
+      if (err) {
+        setError(err.message);
+        await refresh();
+        return false;
+      }
+      return true;
+    },
+    [supabase, refresh],
+  );
+
   // ----- Annonces publiques ----------------------------------------------
 
   const addPost = useCallback(
@@ -487,6 +516,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     logReport,
     updateCard,
     setUserRole,
+    saveVision,
     addPost,
     updatePost,
     deletePost,

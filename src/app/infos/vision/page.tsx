@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Compass } from "lucide-react";
 import { getPublicSettings } from "@/lib/public-data";
+import { coverUrl } from "@/lib/media";
 
 /**
  * Onglet « Notre vision » : le texte rédigé par le bureau depuis
@@ -34,7 +35,18 @@ export default async function VisionPage() {
           </Link>
         </div>
       ) : (
-        <article className="card p-6 sm:p-8">
+        <article className="card overflow-hidden">
+          {coverUrl(settings?.vision_cover) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverUrl(settings?.vision_cover)!}
+              alt=""
+              className="block max-h-72 w-full object-cover"
+              style={{ aspectRatio: "16 / 9" }}
+            />
+          )}
+
+          <div className="p-6 sm:p-8">
           <div className="flex items-center gap-2.5 text-accent">
             <Compass size={18} />
             <h2 className="text-sm font-semibold uppercase tracking-wide">
@@ -50,6 +62,7 @@ export default async function VisionPage() {
 
           <div className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-muted sm:text-base">
             {vision}
+          </div>
           </div>
         </article>
       )}

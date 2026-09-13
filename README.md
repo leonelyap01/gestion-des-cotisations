@@ -31,10 +31,10 @@ n'est perdu entre deux sessions.
 | **Membres** | Ajout, modification, suppression, historique complet. Recherche et filtres : à jour, 1 / 2 / 3+ mois d'arriérés, n'ayant jamais soldé, ayant soldé au moins un mois, signalés, droit d'adhésion impayé, membres retirés. |
 | **Cotisations** | La grille : une ligne par membre, une colonne par mois. Un clic marque un mois soldé (la date d'enregistrement est conservée). |
 | **Alertes** | Membres signalés en vue d'un retrait, arriérés importants, droits d'adhésion en attente. |
-| **Annonces** | Rédaction des actualités publiées sur la page publique, brouillons, épinglage, partage du lien. |
+| **Annonces** | Rédaction des actualités et du texte « Notre vision », images de couverture, brouillons, épinglage, partage du lien. |
 | **Cartes de membre** | Collecte des photos, attribution des numéros, génération du PDF des cartes prêt à découper. |
 | **Rapports** | Export PDF et Word de la grille (A4 paysage), PDF du point de caisse, 4 messages WhatsApp, historique daté des générations. |
-| **Paramètres** | Accès du bureau (rôles des comptes), texte de « Notre vision », identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
+| **Paramètres** | Accès du bureau (rôles des comptes), identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
 | **`/infos`** *(publique)* | Espace membres, consultable **sans compte** : onglet Actualités et onglet Notre vision. |
 | **`/carte/…`** *(publique)* | Vérification d'une carte de membre — cible du QR code imprimé sur les cartes. |
 
@@ -128,11 +128,12 @@ L'application est disponible sur http://localhost:3000.
 | Profil | Accès |
 |---|---|
 | **Trésorier** | Tout : tableau de bord, membres, cotisations, alertes, rapports, annonces, cartes, paramètres. |
-| **Communication** | Annonces et cartes de membre uniquement. Les cotisations, les paiements et les montants de la caisse lui sont **refusés par la base de données**, pas seulement masqués à l'écran. |
+| **Communication** | Contenu public (annonces, « Notre vision », couvertures) et cartes de membre. Les cotisations, les paiements et les montants de la caisse lui sont **refusés par la base de données**, pas seulement masqués à l'écran. |
 
-Un compte Communication peut : rédiger et publier les annonces, collecter les
-photos, attribuer les numéros de carte, renseigner la fonction d'un membre et
-générer les cartes. Il peut lire la liste des membres — les cartes en ont besoin —
+Un compte Communication peut : rédiger et publier les annonces, écrire le texte
+« Notre vision », déposer les images de couverture, collecter les photos,
+attribuer les numéros de carte, renseigner la fonction d'un membre et générer
+les cartes. Il peut lire la liste des membres — les cartes en ont besoin —
 mais ne peut modifier aucune autre donnée les concernant.
 
 ### Créer un compte
@@ -222,6 +223,8 @@ ligne sont conservés tels quels.
   rester visible plusieurs semaines.
 - **Pré-remplir avec le point de caisse** insère la synthèse chiffrée du moment
   (théorique, perçu, manque à gagner, détail par mois) dans le corps du message.
+- Une **image de couverture** est facultative : recadrée en 16/9 et compressée
+  dans le navigateur avant l'envoi, pour rester légère en connexion mobile.
 
 Les membres consultent tout cela sur **`/infos`** — par exemple
 `https://votre-site.netlify.app/infos` — sans aucun compte. Le bouton **Message
@@ -268,12 +271,14 @@ rien d'autre. C'est ce qui permet de vérifier une carte présentée en réunion
 
 ### Publier la vision du comité
 
-Page **Paramètres → Notre vision**. Rédigez le texte, enregistrez : un onglet
+Page **Annonces → Notre vision** — accessible aux deux profils, puisqu'il
+s'agit de contenu public. Rédigez le texte, enregistrez : un onglet
 **Notre vision** apparaît aussitôt sur la page publique, à côté des actualités,
 à l'adresse `/infos/vision`.
 
 Les retours à la ligne sont conservés — vous pouvez écrire des paragraphes ou
-une liste à puces. La devise du comité est reprise en tête de la page.
+une liste à puces. La devise du comité est reprise en tête de la page, et vous
+pouvez y ajouter une **image de couverture**.
 
 Tant que le texte est vide, l'onglet n'apparaît pas : la page publique reste
 sur les seules actualités.
@@ -313,6 +318,8 @@ src/
 │   ├── MemberForm.tsx      Formulaire membre
 │   ├── PostForm.tsx        Formulaire d'une annonce
 │   ├── PublicTabs.tsx      Onglets de l'espace public
+│   ├── VisionEditor.tsx    Rédaction de « Notre vision »
+│   ├── CoverPicker.tsx     Choix d'une image de couverture
 │   ├── dashboard/Charts.tsx
 │   └── ui/                 Boutons, cartes, badges, fenêtres modales
 ├── lib/
@@ -321,6 +328,7 @@ src/
 │   ├── messages.ts         Messages WhatsApp
 │   ├── posts.ts            Catégories et tri des annonces
 │   ├── public-data.ts      Lectures de l'espace public (mutualisées)
+│   ├── media.ts            Adresses des images de couverture
 │   ├── cartes.ts           Numérotation et fonctions des cartes
 │   ├── storage.ts          Photos des membres et recadrage du logo
 │   ├── format.ts           Montants, dates, téléchargement, presse-papier
@@ -393,6 +401,9 @@ git push
   nom du comité, sa devise, ses contacts et les montants déjà diffusés à tous ; et
   la vérification d'une carte, limitée au nom, au numéro, à la fonction et au
   statut du titulaire.
+- Deux espaces de stockage, aux règles opposées : les **images de couverture**
+  sont dans un bucket **public** (elles s'affichent sur la page publique), les
+  **photos des membres** dans un bucket **privé**.
 - Les **photos des membres** sont dans un espace de stockage privé : aucune URL
   publique n'y donne accès, l'application passe par des liens signés valables une
   heure et réservés aux comptes authentifiés.

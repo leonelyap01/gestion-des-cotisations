@@ -31,6 +31,13 @@ const SETTINGS: Settings = {
   pay_mtn: "",
   pay_orange: "",
   accent: "emerald",
+  motto: "",
+  city: "",
+  phone: "",
+  logo_url: "",
+  card_prefix: "TEST",
+  vision: "",
+  vision_cover: null,
 };
 
 function member(over: Partial<Member> = {}): Member {
@@ -45,6 +52,10 @@ function member(over: Partial<Member> = {}): Member {
     membership_fee_paid_at: null,
     active: true,
     notes: "",
+    card_number: null,
+    role: "",
+    photo_path: null,
+    card_issued_at: null,
     ...over,
   };
 }

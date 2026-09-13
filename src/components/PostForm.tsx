@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Calculator } from "lucide-react";
 import { Button, Field, Modal } from "./ui";
+import { CoverPicker } from "./CoverPicker";
 import { useData, type NewPost } from "./DataProvider";
 import { POST_CATEGORIES, POST_CATEGORY_ORDER, categoryColor } from "@/lib/posts";
 import { cashPointMessage } from "@/lib/messages";
@@ -38,6 +39,7 @@ export function PostForm({
             category: post.category,
             pinned: post.pinned,
             published: post.published,
+            cover_path: post.cover_path,
           }
         : EMPTY,
     );
@@ -125,6 +127,13 @@ export function PostForm({
           </div>
         </div>
 
+        <CoverPicker
+          value={form.cover_path}
+          onChange={(path) => set("cover_path", path)}
+          prefix="annonces"
+          label="Image de couverture (facultative)"
+        />
+
         <Field
           label="Message"
           hint="Les retours à la ligne sont conservés tels quels sur la page publique."
@@ -198,4 +207,5 @@ const EMPTY: NewPost = {
   category: "info",
   pinned: false,
   published: true,
+  cover_path: null,
 };
