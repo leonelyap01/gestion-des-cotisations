@@ -47,6 +47,8 @@
 
 /* Couleurs sémantiques communes aux trois palettes */
 :root {
+  /* Hauteur du badge éventuel de l'hébergeur ; mesurée au chargement. */
+  --host-badge: 0px;
   --paid: #22c55e;
   --paid-soft: #22c55e1a;
   --due: #f59e0b;

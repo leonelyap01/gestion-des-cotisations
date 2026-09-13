@@ -44,7 +44,7 @@ export default async function InfosPage() {
       data-accent={settings?.accent ?? "emerald"}
       className="min-h-screen bg-bg text-ink"
     >
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto max-w-3xl px-4 pb-24 pt-8 sm:px-6 sm:pb-28 sm:pt-12">
         {/* ---------- En-tête ---------- */}
         <header className="flex flex-col items-center gap-4 border-b border-line pb-7 text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
           <Image

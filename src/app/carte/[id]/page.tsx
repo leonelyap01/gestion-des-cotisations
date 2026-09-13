@@ -42,7 +42,7 @@ export default async function VerificationPage({
   const carte = (Array.isArray(data) ? data[0] : null) as CarteInfo | null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10 text-ink">
+    <div className="flex min-h-screen items-center justify-center bg-bg px-4 pb-28 pt-10 text-ink">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
           <Image

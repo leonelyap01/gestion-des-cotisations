@@ -60,6 +60,40 @@ function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+/**
+ * Hauteur du badge que l'hébergeur ajoute en bas de page.
+ *
+ * Netlify insère sur les sites en *.netlify.app une iframe fixée en bas à
+ * droite, avec un z-index maximal : sans précaution, elle recouvre les deux
+ * derniers onglets de la barre de navigation mobile. On mesure sa hauteur
+ * réelle pour réserver exactement la place qu'il faut — et rien n'est réservé
+ * quand le badge n'est pas là (développement local, domaine personnalisé).
+ */
+function useHostBadgeInset(): number {
+  const [inset, setInset] = useState(0);
+
+  useEffect(() => {
+    const measure = () => {
+      const badge = document.getElementById("nl-badge-frame");
+      setInset(badge ? Math.ceil(badge.getBoundingClientRect().height) : 0);
+    };
+
+    measure();
+    // Le badge est injecté après le chargement de la page : on surveille
+    // l'arrivée (ou le retrait) de l'élément.
+    const observer = new MutationObserver(measure);
+    observer.observe(document.body, { childList: true });
+    window.addEventListener("resize", measure);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  return inset;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -81,12 +115,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (role === "communication" && pathname === "/") router.replace("/annonces");
   }, [role, pathname, router]);
 
+  // Hauteur à réserver en bas de page pour le badge de l'hébergeur.
+  const badgeInset = useHostBadgeInset();
+
   // Garde-fou : tant que les clés Supabase ne sont pas renseignées, on affiche
   // la marche à suivre plutôt qu'une application vide.
   if (!configured) return <SetupNotice />;
 
   return (
-    <div className="min-h-screen lg:flex">
+    <div
+      className="min-h-screen lg:flex"
+      style={{ "--host-badge": badgeInset + "px" } as React.CSSProperties}
+    >
       {/* ---------- Navigation latérale (desktop) ---------- */}
       <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-line bg-surface">
         <div className="border-b border-line px-5 py-5">
@@ -175,7 +215,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 px-4 py-5 pb-24 lg:px-8 lg:py-8 lg:pb-10">
+        <main className="min-w-0 flex-1 px-4 py-5 pb-[calc(6rem+var(--host-badge))] lg:px-8 lg:py-8 lg:pb-[calc(2.5rem+var(--host-badge))]">
           {!ready ? <Spinner /> : allowed ? children : <AccesRefuse role={role} />}
         </main>
       </div>
@@ -183,7 +223,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* ---------- Barre de navigation (mobile) ---------- */}
       <nav
         className="fixed inset-x-0 bottom-0 z-40 grid border-t border-line bg-surface/95 backdrop-blur lg:hidden"
-        style={{ gridTemplateColumns: "repeat(" + Math.max(columns, 1) + ", minmax(0, 1fr))" }}
+        style={{
+          gridTemplateColumns: "repeat(" + Math.max(columns, 1) + ", minmax(0, 1fr))",
+          paddingBottom: "var(--host-badge)",
+        }}
       >
         {primary.map(({ href, label, short, icon: Icon }) => {
           const active = isActive(pathname, href);
@@ -235,7 +278,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onClick={() => setMoreOpen(false)}
             aria-hidden
           />
-          <div className="absolute inset-x-0 bottom-[62px] border-t border-line bg-surface p-3 pb-4">
+          <div className="absolute inset-x-0 bottom-[calc(62px+var(--host-badge))] border-t border-line bg-surface p-3 pb-4">
             <div className="grid grid-cols-2 gap-2">
               {secondary.map(({ href, label, icon: Icon }) => (
                 <Link
