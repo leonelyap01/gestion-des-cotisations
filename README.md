@@ -34,8 +34,8 @@ n'est perdu entre deux sessions.
 | **Annonces** | Rédaction des actualités publiées sur la page publique, brouillons, épinglage, partage du lien. |
 | **Cartes de membre** | Collecte des photos, attribution des numéros, génération du PDF des cartes prêt à découper. |
 | **Rapports** | Export PDF et Word de la grille (A4 paysage), PDF du point de caisse, 4 messages WhatsApp, historique daté des générations. |
-| **Paramètres** | Accès du bureau (rôles des comptes), identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
-| **`/infos`** *(publique)* | Actualités du comité, consultables par les membres **sans compte**. |
+| **Paramètres** | Accès du bureau (rôles des comptes), texte de « Notre vision », identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
+| **`/infos`** *(publique)* | Espace membres, consultable **sans compte** : onglet Actualités et onglet Notre vision. |
 | **`/carte/…`** *(publique)* | Vérification d'une carte de membre — cible du QR code imprimé sur les cartes. |
 
 **Stack** : Next.js 15 (App Router) · TailwindCSS 4 · Supabase (PostgreSQL + Auth) ·
@@ -266,6 +266,18 @@ rien d'autre. C'est ce qui permet de vérifier une carte présentée en réunion
 > une fois connecté. Ils n'apparaissent ni sur `/infos`, ni sur la page de
 > vérification des cartes.
 
+### Publier la vision du comité
+
+Page **Paramètres → Notre vision**. Rédigez le texte, enregistrez : un onglet
+**Notre vision** apparaît aussitôt sur la page publique, à côté des actualités,
+à l'adresse `/infos/vision`.
+
+Les retours à la ligne sont conservés — vous pouvez écrire des paragraphes ou
+une liste à puces. La devise du comité est reprise en tête de la page.
+
+Tant que le texte est vide, l'onglet n'apparaît pas : la page publique reste
+sur les seules actualités.
+
 ### Produire les documents
 
 Page **Rapports** : la grille en PDF ou Word et le point de caisse en PDF se
@@ -288,7 +300,9 @@ src/
 │   │   ├── cartes/             Atelier des cartes de membre
 │   │   ├── rapports/           Exports et messages
 │   │   └── parametres/         Réglages
-│   ├── infos/              ★ Page publique des actualités (sans connexion)
+│   ├── infos/              ★ Espace public : mise en page + onglets
+│   │   ├── page.tsx            Onglet Actualités
+│   │   └── vision/             Onglet Notre vision
 │   ├── carte/[id]/         ★ Vérification publique d'une carte (QR code)
 │   ├── login/              Connexion
 │   ├── layout.tsx
@@ -298,6 +312,7 @@ src/
 │   ├── AppShell.tsx        Navigation (latérale sur PC, barre basse sur mobile)
 │   ├── MemberForm.tsx      Formulaire membre
 │   ├── PostForm.tsx        Formulaire d'une annonce
+│   ├── PublicTabs.tsx      Onglets de l'espace public
 │   ├── dashboard/Charts.tsx
 │   └── ui/                 Boutons, cartes, badges, fenêtres modales
 ├── lib/
@@ -305,6 +320,7 @@ src/
 │   ├── cotisations.test.ts   Les 18 tests de ces règles
 │   ├── messages.ts         Messages WhatsApp
 │   ├── posts.ts            Catégories et tri des annonces
+│   ├── public-data.ts      Lectures de l'espace public (mutualisées)
 │   ├── cartes.ts           Numérotation et fonctions des cartes
 │   ├── storage.ts          Photos des membres et recadrage du logo
 │   ├── format.ts           Montants, dates, téléchargement, presse-papier

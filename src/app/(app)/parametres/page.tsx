@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Palette, Save, UserCog, Wallet } from "lucide-react";
+import { Check, Compass, Palette, Save, UserCog, Wallet } from "lucide-react";
 import { useData } from "@/components/DataProvider";
 import { Badge, Button, Card, Field, SectionTitle, Spinner } from "@/components/ui";
 import { MONTH_NAMES, exerciseMonths } from "@/lib/cotisations";
@@ -164,6 +164,48 @@ export default function ParametresPage() {
           <code className="text-ink">public/logo-ucjea.jpg</code> du projet par votre
           nouvelle image, puis redéployez. Le médaillon circulaire est automatiquement
           détouré de la banderole pour l&apos;impression des cartes.
+        </p>
+      </Card>
+
+      {/* ---------- Notre vision (page publique) ---------- */}
+      <Card className="p-5">
+        <SectionTitle
+          title="Notre vision"
+          subtitle="Publiée dans un onglet de la page publique, à côté des actualités."
+          action={
+            <a
+              href="/infos/vision"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+            >
+              <Compass size={15} /> Voir la page
+            </a>
+          }
+        />
+
+        <Field
+          label="Texte"
+          hint="Les retours à la ligne sont conservés : vous pouvez écrire des paragraphes ou une liste."
+        >
+          <textarea
+            className="field min-h-52 resize-y leading-relaxed"
+            value={form.vision}
+            onChange={(e) => set("vision", e.target.value)}
+            placeholder={
+              "Notre comité œuvre pour…\n\n" +
+              "Nos valeurs : solidarité, unité, respect, développement de notre communauté.\n\n" +
+              "Nos objectifs pour l'année :\n" +
+              "• …\n• …"
+            }
+          />
+        </Field>
+
+        <p className="mt-3 rounded-lg border border-line bg-surface-2 p-3 text-xs leading-relaxed text-muted">
+          {form.vision.trim()
+            ? "L'onglet « Notre vision » est visible sur la page publique."
+            : "Tant que ce texte est vide, l'onglet « Notre vision » n'apparaît pas sur la page publique."}{" "}
+          Ce contenu est lisible par toute personne disposant du lien.
         </p>
       </Card>
 

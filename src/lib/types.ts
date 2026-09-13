@@ -50,6 +50,8 @@ export interface Settings {
   logo_url: string;
   /** Préfixe des numéros de carte, ex. « UCJEA ». */
   card_prefix: string;
+  /** Texte de l'onglet « Notre vision » ; vide = onglet masqué. */
+  vision: string;
 
   updated_at?: string;
 }

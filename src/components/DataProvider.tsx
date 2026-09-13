@@ -55,6 +55,7 @@ const DEFAULT_SETTINGS: Settings = {
   phone: "",
   logo_url: "/logo-ucjea.jpg",
   card_prefix: "UCJEA",
+  vision: "",
 };
 
 export type NewMember = {

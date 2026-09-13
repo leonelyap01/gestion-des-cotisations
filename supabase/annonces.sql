@@ -41,6 +41,15 @@ create policy "posts_manage" on public.posts
   using (true) with check (true);
 
 -- ---------------------------------------------------------------------
+--  Onglet « Notre vision » de la page publique.
+--
+--  Texte libre rédigé par le bureau depuis Paramètres. Tant qu'il est
+--  vide, l'onglet n'apparaît pas sur la page publique.
+-- ---------------------------------------------------------------------
+alter table public.settings
+  add column if not exists vision text not null default '';
+
+-- ---------------------------------------------------------------------
 --  La page publique affiche le nom de l'association, les montants en
 --  vigueur et les coordonnées de paiement : ces informations sont déjà
 --  diffusées à tous les membres, la lecture des paramètres devient donc
