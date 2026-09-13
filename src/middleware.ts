@@ -41,8 +41,12 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isLogin = pathname.startsWith("/login");
-  // Page publique des actualités : consultable par les membres sans compte.
-  const isPublic = pathname === "/infos" || pathname.startsWith("/infos/");
+  // Pages publiques : les actualités destinées aux membres, et la vérification
+  // d'une carte de membre (cible du QR code imprimé sur les cartes).
+  const isPublic =
+    pathname === "/infos" ||
+    pathname.startsWith("/infos/") ||
+    pathname.startsWith("/carte/");
 
   if (!user && !isLogin && !isPublic) {
     const redirect = request.nextUrl.clone();

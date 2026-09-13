@@ -23,7 +23,7 @@ if (!url) {
 }
 
 // Les fichiers sont appliqués dans l'ordre ; tous sont idempotents.
-const FILES = ["schema.sql", "annonces.sql"];
+const FILES = ["schema.sql", "annonces.sql", "cartes.sql"];
 
 const client = new pg.Client({
   connectionString: url,

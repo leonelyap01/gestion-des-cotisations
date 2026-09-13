@@ -13,6 +13,7 @@
 
 import {
   Document,
+  Image,
   Page,
   StyleSheet,
   Text,
@@ -128,11 +129,14 @@ export function GrilleDocument({
   settings,
   payments,
   dashboard,
+  logo,
 }: {
   rows: MemberStats[];
   settings: Settings;
   payments: Payment[];
   dashboard: DashboardSummary;
+  /** Logo du comité en data URL (facultatif). */
+  logo?: string | null;
 }) {
   const accent = accentHex(settings.accent);
   const months = exerciseMonths(settings);
@@ -150,13 +154,17 @@ export function GrilleDocument({
       <Page size="A4" orientation="landscape" style={styles.page}>
         {/* En-tête */}
         <View style={[styles.headerBar, { borderBottomColor: accent }]}>
-          <View>
-            <Text style={[styles.title, { color: accent }]}>
-              {settings.association_name}
-            </Text>
-            <Text style={styles.subtitle}>
-              Grille de suivi des cotisations — exercice {year}
-            </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {logo ? <Image src={logo} style={{ height: 30, width: 38 }} /> : null}
+            <View>
+              <Text style={[styles.title, { color: accent }]}>
+                {settings.association_name}
+              </Text>
+              <Text style={styles.subtitle}>
+                Grille de suivi des cotisations — exercice {year}
+                {settings.motto ? "  ·  « " + settings.motto + " »" : ""}
+              </Text>
+            </View>
           </View>
           <View style={styles.metaRight}>
             <Text style={styles.metaLine}>
@@ -352,10 +360,13 @@ export function CaisseDocument({
   dashboard,
   settings,
   stats,
+  logo,
 }: {
   dashboard: DashboardSummary;
   settings: Settings;
   stats: MemberStats[];
+  /** Logo du comité en data URL (facultatif). */
+  logo?: string | null;
 }) {
   const accent = accentHex(settings.accent);
   const c = settings.currency;
@@ -368,13 +379,17 @@ export function CaisseDocument({
     >
       <Page size="A4" style={[styles.page, { fontSize: 9 }]}>
         <View style={[styles.headerBar, { borderBottomColor: accent }]}>
-          <View>
-            <Text style={[styles.title, { color: accent }]}>
-              {settings.association_name}
-            </Text>
-            <Text style={styles.subtitle}>
-              Point de caisse — exercice {settings.exercise_year}
-            </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {logo ? <Image src={logo} style={{ height: 34, width: 43 }} /> : null}
+            <View>
+              <Text style={[styles.title, { color: accent }]}>
+                {settings.association_name}
+              </Text>
+              <Text style={styles.subtitle}>
+                Point de caisse — exercice {settings.exercise_year}
+                {settings.motto ? "  ·  « " + settings.motto + " »" : ""}
+              </Text>
+            </View>
           </View>
           <View style={styles.metaRight}>
             <Text style={styles.metaLine}>Édité le {formatDate(new Date())}</Text>
@@ -526,6 +541,11 @@ export function CaisseDocument({
             {settings.pay_orange ? (
               <Text>Orange Money : {settings.pay_orange}</Text>
             ) : null}
+            {settings.city || settings.phone ? (
+              <Text style={{ marginTop: 5, color: PRINT.muted }}>
+                {[settings.city, settings.phone].filter(Boolean).join("  ·  ")}
+              </Text>
+            ) : null}
           </View>
         )}
 
@@ -551,6 +571,7 @@ export async function buildGrillePdf(args: {
   settings: Settings;
   payments: Payment[];
   dashboard: DashboardSummary;
+  logo?: string | null;
 }): Promise<Blob> {
   return pdf(<GrilleDocument {...args} />).toBlob();
 }
@@ -559,6 +580,7 @@ export async function buildCaissePdf(args: {
   dashboard: DashboardSummary;
   settings: Settings;
   stats: MemberStats[];
+  logo?: string | null;
 }): Promise<Blob> {
   return pdf(<CaisseDocument {...args} />).toBlob();
 }

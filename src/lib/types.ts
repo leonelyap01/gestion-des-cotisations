@@ -17,6 +17,19 @@ export interface Settings {
   pay_mtn: string;
   pay_orange: string;
   accent: AccentKey;
+
+  // --- Identité visuelle du comité (carte de membre, page publique, rapports) ---
+  /** Devise, ex. « L'avenir nous appartient ». */
+  motto: string;
+  /** Ville ou localité, ex. « Aheoua, Côte d'Ivoire ». */
+  city: string;
+  /** Téléphone de contact du comité. */
+  phone: string;
+  /** Chemin du logo servi par l'application, ex. « /logo-ucjea.jpg ». */
+  logo_url: string;
+  /** Préfixe des numéros de carte, ex. « UCJEA ». */
+  card_prefix: string;
+
   updated_at?: string;
 }
 
@@ -31,6 +44,17 @@ export interface Member {
   membership_fee_paid_at: string | null;
   active: boolean;
   notes: string;
+
+  // --- Carte de membre ---
+  /** Numéro imprimé sur la carte, ex. « UCJEA-2026-014 ». null = non attribué. */
+  card_number: string | null;
+  /** Fonction dans le bureau, ex. « Porte-parole du Président ». */
+  role: string;
+  /** Chemin du portrait dans le bucket privé « photos ». null = photo non reçue. */
+  photo_path: string | null;
+  /** Date de remise de la carte au membre. null = carte non remise. */
+  card_issued_at: string | null;
+
   created_at?: string;
 }
 

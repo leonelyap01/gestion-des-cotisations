@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { POST_CATEGORIES, categoryColor, sortPosts } from "@/lib/posts";
@@ -45,21 +46,36 @@ export default async function InfosPage() {
     >
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         {/* ---------- En-tête ---------- */}
-        <header className="border-b border-line pb-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-            Actualités
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            {name}
-          </h1>
-          {settings && (
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              Exercice {settings.exercise_year} · cotisation{" "}
-              {formatAmount(settings.monthly_amount, currency)} par mois · droit
-              d&apos;adhésion {formatAmount(settings.membership_fee, currency)} (une
-              seule fois, à l&apos;arrivée).
+        <header className="flex flex-col items-center gap-4 border-b border-line pb-7 text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
+          <Image
+            src={settings?.logo_url || "/logo-ucjea.jpg"}
+            alt=""
+            width={329}
+            height={262}
+            priority
+            className="h-24 w-auto shrink-0 rounded-xl bg-white p-1.5"
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              Actualités
             </p>
-          )}
+            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
+              {name}
+            </h1>
+            {settings?.motto && (
+              <p className="mt-1.5 text-sm italic text-muted">
+                « {settings.motto} »
+              </p>
+            )}
+            {settings && (
+              <p className="mt-3 text-sm leading-relaxed text-muted">
+                Exercice {settings.exercise_year} · cotisation{" "}
+                {formatAmount(settings.monthly_amount, currency)} par mois · droit
+                d&apos;adhésion {formatAmount(settings.membership_fee, currency)} (une
+                seule fois, à l&apos;arrivée).
+              </p>
+            )}
+          </div>
         </header>
 
         {/* ---------- Annonces ---------- */}
@@ -135,7 +151,11 @@ export default async function InfosPage() {
 
         {/* ---------- Pied de page ---------- */}
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 text-xs text-muted">
-          <span>{name}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>{name}</span>
+            {settings?.city && <span>· {settings.city}</span>}
+            {settings?.phone && <span>· {settings.phone}</span>}
+          </span>
           <Link href="/login" className="hover:text-accent">
             Espace trésorier
           </Link>

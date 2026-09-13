@@ -8,8 +8,10 @@ import {
   CalendarCheck2,
   FileText,
   LayoutDashboard,
+  IdCard,
   LogOut,
   Megaphone,
+  MoreHorizontal,
   Settings as SettingsIcon,
   Users,
   Wallet,
@@ -17,16 +19,24 @@ import {
 import { useData } from "./DataProvider";
 import { Spinner } from "./ui";
 
-/** `short` est le libellé utilisé par la barre de navigation mobile. */
+/**
+ * `short` est le libellé de la barre mobile ; `primary` désigne les quatre
+ * entrées qui y restent visibles en permanence — les autres sont regroupées
+ * derrière le bouton « Plus », pour garder des cibles tactiles confortables.
+ */
 const NAV = [
-  { href: "/", label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard },
-  { href: "/membres", label: "Membres", short: "Membres", icon: Users },
-  { href: "/cotisations", label: "Cotisations", short: "Cotis.", icon: CalendarCheck2 },
-  { href: "/alertes", label: "Alertes", short: "Alertes", icon: AlertTriangle },
-  { href: "/annonces", label: "Annonces", short: "Infos", icon: Megaphone },
-  { href: "/rapports", label: "Rapports", short: "Rapports", icon: FileText },
-  { href: "/parametres", label: "Paramètres", short: "Réglages", icon: SettingsIcon },
+  { href: "/", label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard, primary: true },
+  { href: "/membres", label: "Membres", short: "Membres", icon: Users, primary: true },
+  { href: "/cotisations", label: "Cotisations", short: "Cotis.", icon: CalendarCheck2, primary: true },
+  { href: "/alertes", label: "Alertes", short: "Alertes", icon: AlertTriangle, primary: true },
+  { href: "/annonces", label: "Annonces", short: "Annonces", icon: Megaphone, primary: false },
+  { href: "/cartes", label: "Cartes de membre", short: "Cartes", icon: IdCard, primary: false },
+  { href: "/rapports", label: "Rapports", short: "Rapports", icon: FileText, primary: false },
+  { href: "/parametres", label: "Paramètres", short: "Réglages", icon: SettingsIcon, primary: false },
 ];
+
+const PRIMARY_NAV = NAV.filter((n) => n.primary);
+const SECONDARY_NAV = NAV.filter((n) => !n.primary);
 
 function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -36,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { settings, dashboard, ready, error, configured, signOut } = useData();
   const [signingOut, setSigningOut] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // Garde-fou : tant que les clés Supabase ne sont pas renseignées, on affiche
   // la marche à suivre plutôt qu'une application vide.
@@ -132,8 +143,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* ---------- Barre de navigation (mobile) ---------- */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-line bg-surface/95 backdrop-blur lg:hidden">
-        {NAV.map(({ href, label, short, icon: Icon }) => {
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur lg:hidden">
+        {PRIMARY_NAV.map(({ href, label, short, icon: Icon }) => {
           const active = isActive(pathname, href);
           const badge = href === "/alertes" && dashboard.atRisk > 0;
           return (
@@ -141,12 +152,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               aria-label={label}
+              onClick={() => setMoreOpen(false)}
               className={
-                "relative flex flex-col items-center gap-0.5 py-2.5 text-[9px] " +
+                "relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] " +
                 (active ? "text-accent" : "text-muted")
               }
             >
-              <Icon size={18} />
+              <Icon size={19} />
               <span className="max-w-full truncate px-0.5">{short}</span>
               {badge && (
                 <span className="absolute right-1/4 top-1.5 h-1.5 w-1.5 rounded-full bg-danger" />
@@ -154,7 +166,54 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+
+        {/* Les quatre autres rubriques, sous un bouton « Plus ». */}
+        <button
+          onClick={() => setMoreOpen((v) => !v)}
+          aria-expanded={moreOpen}
+          aria-label="Plus de rubriques"
+          className={
+            "flex flex-col items-center gap-0.5 py-2.5 text-[10px] " +
+            (moreOpen || SECONDARY_NAV.some((n) => isActive(pathname, n.href))
+              ? "text-accent"
+              : "text-muted")
+          }
+        >
+          <MoreHorizontal size={19} />
+          <span>Plus</span>
+        </button>
       </nav>
+
+      {/* Feuille « Plus » (mobile) */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMoreOpen(false)}
+            aria-hidden
+          />
+          <div className="absolute inset-x-0 bottom-[62px] border-t border-line bg-surface p-3 pb-4">
+            <div className="grid grid-cols-2 gap-2">
+              {SECONDARY_NAV.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setMoreOpen(false)}
+                  className={
+                    "flex items-center gap-3 rounded-xl border px-3.5 py-3 text-sm transition " +
+                    (isActive(pathname, href)
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line text-ink")
+                  }
+                >
+                  <Icon size={18} />
+                  <span className="truncate">{label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

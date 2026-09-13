@@ -90,6 +90,82 @@ export default function ParametresPage() {
         </div>
       </Card>
 
+      {/* ---------- Identité visuelle ---------- */}
+      <Card className="p-5">
+        <SectionTitle
+          title="Identité du comité"
+          subtitle="Reprise sur la carte de membre, la page publique et les rapports."
+        />
+
+        <div className="flex flex-wrap items-start gap-5">
+          <div className="shrink-0">
+            <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">
+              Logo
+            </span>
+            {/* Fichier du dépôt : remplacez public/logo-ucjea.jpg pour le changer. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={form.logo_url || "/logo-ucjea.jpg"}
+              alt="Logo du comité"
+              className="h-20 w-auto rounded-lg border border-line bg-white p-1.5"
+            />
+          </div>
+
+          <div className="grid min-w-64 flex-1 gap-4 sm:grid-cols-2">
+            <Field label="Devise" hint="Affichée entre guillemets sur la carte.">
+              <input
+                className="field"
+                value={form.motto}
+                onChange={(e) => set("motto", e.target.value)}
+                placeholder="L'avenir nous appartient"
+              />
+            </Field>
+            <Field label="Ville / localité">
+              <input
+                className="field"
+                value={form.city}
+                onChange={(e) => set("city", e.target.value)}
+                placeholder="Aheoua, Côte d'Ivoire"
+              />
+            </Field>
+            <Field label="Téléphone du comité">
+              <input
+                className="field"
+                type="tel"
+                inputMode="tel"
+                value={form.phone}
+                onChange={(e) => set("phone", e.target.value)}
+                placeholder="0142767290"
+              />
+            </Field>
+            <Field
+              label="Préfixe des cartes"
+              hint={
+                "Numéros de la forme " +
+                (form.card_prefix || "UCJEA") +
+                "-" +
+                form.exercise_year +
+                "-014"
+              }
+            >
+              <input
+                className="field uppercase"
+                value={form.card_prefix}
+                onChange={(e) => set("card_prefix", e.target.value.toUpperCase())}
+                placeholder="UCJEA"
+              />
+            </Field>
+          </div>
+        </div>
+
+        <p className="mt-4 rounded-lg border border-line bg-surface-2 p-3 text-xs text-muted">
+          Pour changer le logo, remplacez le fichier{" "}
+          <code className="text-ink">public/logo-ucjea.jpg</code> du projet par votre
+          nouvelle image, puis redéployez. Le médaillon circulaire est automatiquement
+          détouré de la banderole pour l&apos;impression des cartes.
+        </p>
+      </Card>
+
       {/* ---------- Montants ---------- */}
       <Card className="p-5">
         <SectionTitle

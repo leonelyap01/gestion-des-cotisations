@@ -10,6 +10,7 @@ import {
   AlignmentType,
   Document,
   HeadingLevel,
+  ImageRun,
   PageOrientation,
   Packer,
   Paragraph,
@@ -71,11 +72,14 @@ export async function buildGrilleDocx({
   settings,
   payments,
   dashboard,
+  logo,
 }: {
   rows: MemberStats[];
   settings: Settings;
   payments: Payment[];
   dashboard: DashboardSummary;
+  /** Octets du logo du comité (facultatif). */
+  logo?: ArrayBuffer | null;
 }): Promise<Blob> {
   const accent = accentHex(settings.accent);
   const months = exerciseMonths(settings);
@@ -190,6 +194,21 @@ export async function buildGrilleDocx({
           },
         },
         children: [
+          // Logo du comité, quand il a pu être chargé.
+          ...(logo
+            ? [
+                new Paragraph({
+                  spacing: { after: 60 },
+                  children: [
+                    new ImageRun({
+                      type: "jpg",
+                      data: logo,
+                      transformation: { width: 86, height: 68 },
+                    }),
+                  ],
+                }),
+              ]
+            : []),
           new Paragraph({
             heading: HeadingLevel.HEADING_1,
             children: [
@@ -202,6 +221,21 @@ export async function buildGrilleDocx({
               }),
             ],
           }),
+          ...(settings.motto
+            ? [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: "« " + settings.motto + " »",
+                      italics: true,
+                      size: 18,
+                      color: noHash(PRINT.muted),
+                      font: "Calibri",
+                    }),
+                  ],
+                }),
+              ]
+            : []),
           new Paragraph({
             spacing: { after: 120 },
             children: [

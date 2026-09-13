@@ -1,7 +1,8 @@
-# Gestion des cotisations — Comité Jeunesse Émergente
+# Gestion des cotisations — Comité Jeunesse Émergente d'Aheoua
 
 Application web de suivi des cotisations mensuelles : membres, grille mois par mois,
-tableau de bord financier, rapports PDF/Word et messages WhatsApp prêts à l'emploi.
+tableau de bord financier, cartes de membre, rapports PDF/Word et messages WhatsApp
+prêts à l'emploi.
 
 Utilisable au téléphone comme au bureau, avec une base de données hébergée : rien
 n'est perdu entre deux sessions.
@@ -31,9 +32,11 @@ n'est perdu entre deux sessions.
 | **Cotisations** | La grille : une ligne par membre, une colonne par mois. Un clic marque un mois soldé (la date d'enregistrement est conservée). |
 | **Alertes** | Membres signalés en vue d'un retrait, arriérés importants, droits d'adhésion en attente. |
 | **Annonces** | Rédaction des actualités publiées sur la page publique, brouillons, épinglage, partage du lien. |
+| **Cartes de membre** | Collecte des photos, attribution des numéros, génération du PDF des cartes prêt à découper. |
 | **Rapports** | Export PDF et Word de la grille (A4 paysage), PDF du point de caisse, 4 messages WhatsApp, historique daté des générations. |
-| **Paramètres** | Montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
+| **Paramètres** | Identité du comité (devise, ville, contact, préfixe des cartes), montants, exercice, mois ouverts, coordonnées Wave / MTN / Orange, couleur d'accent. |
 | **`/infos`** *(publique)* | Actualités du comité, consultables par les membres **sans compte**. |
+| **`/carte/…`** *(publique)* | Vérification d'une carte de membre — cible du QR code imprimé sur les cartes. |
 
 **Stack** : Next.js 15 (App Router) · TailwindCSS 4 · Supabase (PostgreSQL + Auth) ·
 Recharts · @react-pdf/renderer · docx.
@@ -93,9 +96,11 @@ par les règles RLS de la base, pas par le secret de la clé.
 
 Deux possibilités, au choix.
 
-**A. Depuis l'interface Supabase** — ouvrez *SQL Editor*, collez tout le contenu de
-[`supabase/schema.sql`](supabase/schema.sql) et cliquez sur **Run**, puis faites
-de même avec [`supabase/annonces.sql`](supabase/annonces.sql).
+**A. Depuis l'interface Supabase** — ouvrez *SQL Editor* et exécutez les trois
+fichiers du dossier [`supabase/`](supabase), dans l'ordre, en cliquant
+sur **Run** après chacun : [`schema.sql`](supabase/schema.sql) (cotisations),
+[`annonces.sql`](supabase/annonces.sql) (page publique),
+[`cartes.sql`](supabase/cartes.sql) (cartes de membre et identité du comité).
 
 **B. En ligne de commande** — avec le mot de passe de la base :
 
@@ -210,6 +215,36 @@ dans le groupe.
 > *vous* écrivez dans une annonce devient visible de quiconque possède le lien :
 > n'y nommez personne à propos de ses impayés.
 
+### Établir les cartes de membre
+
+Page **Cartes de membre**. Le tableau de bord du haut suit l'avancement : numéros
+attribués, photos reçues, cartes remises.
+
+1. **Relancer** — le bouton « Message de relance photos » copie une annonce prête à
+   coller dans le groupe, demandant à chacun d'envoyer sa photo en privé.
+2. **Ajouter les photos** — pour chaque membre, l'icône appareil photo ouvre la
+   galerie du téléphone. L'image est recadrée au format portrait et compressée
+   automatiquement : une photo de 4 Mo devient quelques dizaines de kilo-octets.
+3. **Attribuer les numéros** — un bouton numérote d'un coup tous les membres qui
+   n'ont pas encore de carte, par ordre alphabétique, au format
+   `UCJEA-2026-014`. Les numéros déjà attribués ne changent jamais.
+4. **Imprimer** — « Générer les cartes (PDF) » produit un fichier A4 : deux membres
+   par page, recto et verso côte à côte, à la taille réelle d'une carte bancaire
+   (54 × 85,6 mm). Imprimez à **100 %**, sans mise à l'échelle, puis découpez.
+5. **Suivre la remise** — la coche verte marque la carte comme remise au membre.
+
+La **fonction** imprimée sur la carte (Président, Trésorier, Porte-parole du
+Président…) se renseigne dans la fiche du membre, onglet Membres.
+
+Le **QR code** de chaque carte renvoie vers `/carte/<identifiant>`, une page
+publique qui affiche le nom, le numéro, la fonction et le statut du titulaire —
+rien d'autre. C'est ce qui permet de vérifier une carte présentée en réunion.
+
+> **Photos et vie privée.** Les portraits sont stockés dans un espace **privé** :
+> ils ne sont accessibles par aucune URL publique, seulement depuis l'application
+> une fois connecté. Ils n'apparaissent ni sur `/infos`, ni sur la page de
+> vérification des cartes.
+
 ### Produire les documents
 
 Page **Rapports** : la grille en PDF ou Word et le point de caisse en PDF se
@@ -229,9 +264,11 @@ src/
 │   │   ├── cotisations/        La grille mensuelle
 │   │   ├── alertes/            Signalements
 │   │   ├── annonces/           Rédaction des actualités publiques
+│   │   ├── cartes/             Atelier des cartes de membre
 │   │   ├── rapports/           Exports et messages
 │   │   └── parametres/         Réglages
 │   ├── infos/              ★ Page publique des actualités (sans connexion)
+│   ├── carte/[id]/         ★ Vérification publique d'une carte (QR code)
 │   ├── login/              Connexion
 │   ├── layout.tsx
 │   └── globals.css         Thème sombre, 3 palettes, styles d'impression
@@ -247,14 +284,18 @@ src/
 │   ├── cotisations.test.ts   Les 18 tests de ces règles
 │   ├── messages.ts         Messages WhatsApp
 │   ├── posts.ts            Catégories et tri des annonces
+│   ├── cartes.ts           Numérotation et fonctions des cartes
+│   ├── storage.ts          Photos des membres et recadrage du logo
 │   ├── format.ts           Montants, dates, téléchargement, presse-papier
 │   ├── types.ts
-│   ├── exports/            PDF (@react-pdf) et Word (docx)
+│   ├── exports/            PDF (@react-pdf), Word (docx) et cartes
 │   └── supabase/           Clients navigateur et serveur
-├── middleware.ts           Redirige vers /login (sauf /infos, publique)
+├── middleware.ts           Redirige vers /login (sauf /infos et /carte/…)
 scripts/                    Mise en place de la base et import initial
 supabase/schema.sql         Tables, index et règles RLS
 supabase/annonces.sql       Table des annonces + lecture publique
+supabase/cartes.sql         Cartes, identité du comité, stockage des photos
+public/logo-ucjea.jpg       Logo du comité (remplacer ce fichier pour le changer)
 ```
 
 Le fichier à connaître est **`src/lib/cotisations.ts`** : il ne contient que des
@@ -280,7 +321,8 @@ Sous PowerShell :
 
 ```powershell
 $env:DATABASE_URL = "postgresql://postgres:MOT_DE_PASSE@db.xxxxxxxx.supabase.co:5432/postgres"
-node scripts/setup-db.mjs        # applique schema.sql puis annonces.sql
+node scripts/setup-db.mjs        # applique schema.sql, annonces.sql et cartes.sql
+node scripts/check-cartes.mjs    # vérifie l'installation du module cartes
 node scripts/seed-membres.mjs    # réimporte les 24 membres du registre 2026
 ```
 
@@ -302,10 +344,17 @@ git push
 
 - `members`, `payments` et `reports` sont protégées par **Row Level Security** :
   sans session authentifiée, aucune ligne n'est lisible ni modifiable.
-- Seules deux exceptions sont publiques, et volontairement : les annonces
-  **publiées** (les brouillons restent privés) et la ligne de paramètres, qui ne
-  contient que le nom de l'association, les montants et les coordonnées de
-  paiement déjà diffusées à tous.
+- Trois exceptions sont publiques, et volontairement : les annonces **publiées**
+  (les brouillons restent privés) ; la ligne de paramètres, qui ne contient que le
+  nom du comité, sa devise, ses contacts et les montants déjà diffusés à tous ; et
+  la vérification d'une carte, limitée au nom, au numéro, à la fonction et au
+  statut du titulaire.
+- Les **photos des membres** sont dans un espace de stockage privé : aucune URL
+  publique n'y donne accès, l'application passe par des liens signés valables une
+  heure et réservés aux comptes authentifiés.
+- La vérification d'une carte passe par une fonction SQL dédiée
+  (`verifier_carte`) : la table des membres, elle, reste fermée aux visiteurs
+  anonymes.
 - Le middleware renvoie vers `/login` toute requête non authentifiée, à
   l'exception de la page publique `/infos`.
 - `.env.local` est ignoré par Git ; il ne contient de toute façon que les deux clés

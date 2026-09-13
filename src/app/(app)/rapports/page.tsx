@@ -29,6 +29,7 @@ import {
   formatDateTime,
   slugify,
 } from "@/lib/format";
+import { toArrayBuffer, toDataUrl } from "@/lib/storage";
 
 type MessageKey = "reminder" | "newMonth" | "arrears" | "cashPoint";
 
@@ -57,7 +58,8 @@ export default function RapportsPage() {
     setBusy("pdf-grille");
     try {
       const { buildGrillePdf } = await import("@/lib/exports/pdf");
-      const blob = await buildGrillePdf({ rows, settings, payments, dashboard });
+      const logo = await toDataUrl(settings.logo_url || "/logo-ucjea.jpg");
+      const blob = await buildGrillePdf({ rows, settings, payments, dashboard, logo });
       downloadBlob(blob, `grille-cotisations-${base}-${year}.pdf`);
       await logReport("pdf-grille", `Grille de cotisations ${year} (PDF)`, {
         membres: rows.length,
@@ -71,7 +73,8 @@ export default function RapportsPage() {
     setBusy("docx-grille");
     try {
       const { buildGrilleDocx } = await import("@/lib/exports/docx");
-      const blob = await buildGrilleDocx({ rows, settings, payments, dashboard });
+      const logo = await toArrayBuffer(settings.logo_url || "/logo-ucjea.jpg");
+      const blob = await buildGrilleDocx({ rows, settings, payments, dashboard, logo });
       downloadBlob(blob, `grille-cotisations-${base}-${year}.docx`);
       await logReport("docx-grille", `Grille de cotisations ${year} (Word)`, {
         membres: rows.length,
@@ -85,7 +88,8 @@ export default function RapportsPage() {
     setBusy("pdf-caisse");
     try {
       const { buildCaissePdf } = await import("@/lib/exports/pdf");
-      const blob = await buildCaissePdf({ dashboard, settings, stats: rows });
+      const logo = await toDataUrl(settings.logo_url || "/logo-ucjea.jpg");
+      const blob = await buildCaissePdf({ dashboard, settings, stats: rows, logo });
       downloadBlob(blob, `point-de-caisse-${base}-${year}.pdf`);
       await logReport("pdf-caisse", `Point de caisse ${year} (PDF)`, {
         percu: dashboard.collected,

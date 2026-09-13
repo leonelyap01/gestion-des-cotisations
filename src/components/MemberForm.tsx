@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Field, Modal } from "./ui";
 import { useData, type NewMember } from "./DataProvider";
 import { MONTH_NAMES } from "@/lib/cotisations";
+import { ROLES } from "@/lib/cartes";
 import { formatAmount } from "@/lib/format";
 import type { Member } from "@/lib/types";
 
@@ -43,6 +44,7 @@ export function MemberForm({
             membership_fee_paid_at: member.membership_fee_paid_at,
             active: member.active,
             notes: member.notes ?? "",
+            role: member.role ?? "",
           }
         : emptyMember(settings.exercise_year, settings.start_month),
     );
@@ -92,16 +94,36 @@ export function MemberForm({
           </Field>
         </div>
 
-        <Field label="Téléphone" hint="Facultatif — sert aux messages WhatsApp.">
-          <input
-            className="field"
-            type="tel"
-            inputMode="tel"
-            value={form.phone}
-            onChange={(e) => set("phone", e.target.value)}
-            placeholder="07 00 00 00 00"
-          />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Téléphone" hint="Facultatif — sert aux messages WhatsApp.">
+            <input
+              className="field"
+              type="tel"
+              inputMode="tel"
+              value={form.phone}
+              onChange={(e) => set("phone", e.target.value)}
+              placeholder="07 00 00 00 00"
+            />
+          </Field>
+
+          <Field
+            label="Fonction"
+            hint="Imprimée sur la carte de membre. « Membre » par défaut."
+          >
+            <input
+              className="field"
+              list="fonctions-comite"
+              value={form.role}
+              onChange={(e) => set("role", e.target.value)}
+              placeholder="Membre"
+            />
+            <datalist id="fonctions-comite">
+              {ROLES.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
+          </Field>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -221,5 +243,6 @@ function emptyMember(year: number, month: number): NewMember {
     membership_fee_paid_at: null,
     active: true,
     notes: "",
+    role: "",
   };
 }

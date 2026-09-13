@@ -48,6 +48,11 @@ const DEFAULT_SETTINGS: Settings = {
   pay_mtn: "",
   pay_orange: "",
   accent: "emerald",
+  motto: "",
+  city: "",
+  phone: "",
+  logo_url: "/logo-ucjea.jpg",
+  card_prefix: "UCJEA",
 };
 
 export type NewMember = {
@@ -60,6 +65,8 @@ export type NewMember = {
   membership_fee_paid_at: string | null;
   active: boolean;
   notes: string;
+  /** Fonction dans le bureau, imprimée sur la carte de membre. */
+  role: string;
 };
 
 export type NewPost = {
